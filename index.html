@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>DOGMA MAN - STAR VELOCITY</title>
+    <link rel="icon" href="https://static.tildacdn.com/tild3932-6438-4339-b534-356530636330/1.png" type="image/png">
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffc240; }
+        canvas { display: block; image-rendering: pixelated; }
+        
+        #menu-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background-color: #ffc240; z-index: 200; opacity: 1; transition: opacity 0.2s ease-in; overflow: hidden; 
+        }
+        
+        #stars-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        #rays-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .menu-content { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; z-index: 10; }
+        
+        #menu-glow { position: absolute; width: 600px; height: auto; z-index: 11; top: 50%; left: 58%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.8; animation: pulse 2s infinite ease-in-out; }
+        #menu-logo { width: 700px; max-width: 95%; height: auto; z-index: 12; margin-bottom: -90px; margin-left: 50px; position: relative; }
+        #menu-hero { width: auto; height: 55vh; max-width: 90%; object-fit: contain; z-index: 15; position: relative; margin-top: 20px; margin-left: -50px; }
+        
+        @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; } 50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.9; } }
+        
+        #top-info-text { 
+            color: #000000; font-family: 'Courier New', Courier, monospace; 
+            font-size: 15px; letter-spacing: 1px; text-transform: uppercase; 
+            margin-bottom: 5px; z-index: 20; font-weight: 900;
+        }
+        .menu-score-text { 
+            z-index: 20; margin-top: 0px; min-height: 60px; display: flex; align-items: center; justify-content: center;
+        }
+        
+        #menu-status-img { height: 45px; width: auto; max-width: 600px; }
+        
+        /* Шрифт Courier для счетчика на экране смерти */
+        #final-score-val { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-weight: 900; 
+            color: #000;
+        }
+
+        .label-img { height: 32px; width: auto; }
+
+        .menu-controls-text { 
+            color: #c28b1a;
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 19px; margin-top: 10px; opacity: 0; text-align: center; 
+            transition: opacity 0.2s ease; min-height: 30px; display: flex; 
+            align-items: center; justify-content: center; z-index: 20; 
+            font-weight: 900;
+        }
+        .show-text { opacity: 0.9; }
+
+        .ui-panel { 
+            position: absolute; top: 60px; width: 100%; display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; color: #000000; 
+            font-family: 'Courier New', Courier, monospace; pointer-events: none; z-index: 100; 
+            font-weight: 800;
+        }
+        .ui-section { display: flex; flex-direction: column; align-items: center; }
+        .stat-value { font-size: 38px; font-weight: bold; transition: transform 0.1s ease-out; color: #000; }
+        
+        .killed-container { display: flex; align-items: center; gap: 12px; }
+
+        #enemies { font-size: 56px; transform-origin: center; }
+        .km-unit { letter-spacing: -3px; margin-left: 2px; font-size: 24px; }
+        #hp-container { position: absolute; top: 25px; left: 50%; transform: translateX(-50%); width: 280px; height: 12px; border: 2px solid #000; z-index: 110; overflow: hidden; }
+        #hp-bar { width: 100%; height: 100%; background: #ffffff; transition: width 0.2s ease; }
+    </style>
+</head>
+<body>
+    <div id="hp-container"><div id="hp-bar"></div></div>
+    
+    <div id="menu-overlay">
+        <canvas id="stars-canvas"></canvas>
+        <svg id="rays-container" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g id="rays-group" transform="translate(500, 500)"></g></svg>
+        <div class="menu-content">
+            <img id="menu-glow" src="https://static.tildacdn.com/tild3934-3033-4662-b037-666133333238/1.png" alt="Glow">
+            <img id="menu-logo" src="https://static.tildacdn.com/tild3232-6637-4631-a435-656534643335/1.png" alt="Logo">
+            <img id="menu-hero" src="https://static.tildacdn.com/tild3835-3635-4730-b438-373065336632/1.png" alt="Hero">
+            
+            <div id="top-info-text">НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ</div>
+            <div id="final-score-display" class="menu-score-text">
+                <img id="menu-status-img" src="https://static.tildacdn.com/tild3766-6665-4837-b430-353063666562/1.png" alt="Status">
+                <span id="final-score-val" class="stat-value" style="margin-left: 20px; display: none; font-size: 56px;">0</span>
+            </div>
+            <p id="controls-text" class="menu-controls-text show-text">ПРОБЕЛ: ПРЫГАЙ | КОНТРЛ: СТРЕЛЯЙ</p>
+        </div>
+    </div>
+
+    <div class="ui-panel">
+        <div class="ui-section" style="align-items: flex-start; padding-left: 40px;"><div>ДИСТАНЦИЯ</div><div class="stat-value" id="distVal">0м</div></div>
+        <div class="ui-section">
+            <div class="killed-container">
+                <img src="https://static.tildacdn.com/tild6562-6538-4338-b234-663764356163/1.png" class="label-img" alt="Уничтожено">
+                <div id="enemies" class="stat-value">0</div>
+            </div>
+        </div>
+        <div class="ui-section" style="align-items: flex-end; padding-right: 40px;"><div>БОЕПРИПАСЫ</div><div id="ammo-count" class="stat-value">20</div></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const starsCanvas = document.getElementById('stars-canvas');
+const sCtx = starsCanvas.getContext('2d');
+const menuOverlay = document.getElementById('menu-overlay');
+const topInfoText = document.getElementById('top-info-text');
+const menuStatusImg = document.getElementById('menu-status-img');
+const finalScoreVal = document.getElementById('final-score-val');
+const controlsText = document.getElementById('controls-text');
+const hpBar = document.getElementById('hp-bar');
+const ammoCountEl = document.getElementById('ammo-count');
+const enemiesEl = document.getElementById('enemies');
+const distValEl = document.getElementById('distVal');
+
+let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true;
+let distance = 0, zombiesToBonus = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0;
+let invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0; 
+
+const MAIN_YELLOW = '#ffc240', DARK_YELLOW = '#e0a11d', SHADOW_YELLOW = '#c28b1a', PIT_COLOR = '#c28b1a', BLACK = '#000000', WHITE = '#ffffff';
+
+const heroRun = ['https://static.tildacdn.com/tild6632-6637-4139-a435-363735383936/1.png','https://static.tildacdn.com/tild6537-3237-4134-b038-613339363637/1.png','https://static.tildacdn.com/tild3736-6130-4339-b530-633337316132/1.png','https://static.tildacdn.com/tild3537-3533-4263-a230-366365363565/1.png','https://static.tildacdn.com/tild6230-6264-4430-b936-636534613238/1.png','https://static.tildacdn.com/tild3563-3061-4536-b762-333763313166/1.png'].map(u=>{const i=new Image();i.src=u;return i;});
+const heroRunShoot = ['https://static.tildacdn.com/tild3865-6666-4666-b535-306538663738/1.png','https://static.tildacdn.com/tild3361-6366-4263-a264-626435636330/1.png','https://static.tildacdn.com/tild6533-3930-4435-b233-623066353138/1.png','https://static.tildacdn.com/tild6434-3864-4532-b330-323565313031/1.png','https://static.tildacdn.com/tild6536-6530-4533-b533-333533613232/1.png','https://static.tildacdn.com/tild6234-6661-4337-a362-303032613230/1.png'].map(u=>{const i=new Image();i.src=u;return i;});
+const heroJump = new Image(); heroJump.src = 'https://static.tildacdn.com/tild3937-6331-4039-b738-363938306338/1.png';
+const heroLand = new Image(); heroLand.src = 'https://static.tildacdn.com/tild3465-3361-4938-b330-626439363434/1.png';
+const heroJumpShoot = new Image(); heroJumpShoot.src = 'https://static.tildacdn.com/tild6438-6333-4061-b438-653063646336/1.png';
+const heroLandShoot = new Image(); heroLandShoot.src = 'https://static.tildacdn.com/tild3630-3336-4564-b365-383439313638/1.png';
+const heroBoost = new Image(); heroBoost.src = 'https://static.tildacdn.com/tild3466-6636-4631-a430-393964303437/1.png';
+const heroBoostShoot = new Image(); heroBoostShoot.src = 'https://static.tildacdn.com/tild3133-3962-4336-b465-376232393438/1.png';
+const ammoImg = new Image(); ammoImg.src = 'https://static.tildacdn.com/tild6162-3165-4637-b831-616164366638/Untitled-10.png';
+const lifeImg = new Image(); lifeImg.src = 'https://static.tildacdn.com/tild6332-3731-4363-a561-356161626431/Untitled-15.png';
+const boostImg = new Image(); boostImg.src = 'https://static.tildacdn.com/tild6236-3764-4835-b661-333939656234/Untitled-15.png';
+const superShotImg = new Image(); superShotImg.src = 'https://static.tildacdn.com/tild6565-6233-4964-b933-356132373939/rgfr.png';
+const shieldImg = new Image(); shieldImg.src = 'https://static.tildacdn.com/tild3064-6639-4665-a639-323665653532/fgregr.png';
+const flyingImages = ['https://static.tildacdn.com/tild3232-6631-4062-b736-613566626336/photo.png','https://static.tildacdn.com/tild3637-3534-4761-b062-353436313833/photo.png'].map(u=>{const i=new Image();i.src=u;return i;});
+const zombieImages = ['https://static.tildacdn.com/tild6330-6534-4533-a437-323735616366/1z.png','https://static.tildacdn.com/tild6139-3531-4166-a462-323462656133/2z.png','https://static.tildacdn.com/tild6236-3634-4531-b237-376333343333/3z.png','https://static.tildacdn.com/tild6466-3739-4039-a631-323939386439/4z.png','https://static.tildacdn.com/tild3934-3237-4431-a432-376630626363/5z.png','https://static.tildacdn.com/tild6137-3939-4336-b561-326662353764/6z.png','https://static.tildacdn.com/tild6639-3164-4333-a234-663330353235/7z.png'].map(u=>{const i=new Image();i.src=u;return i;});
+
+function resize() { 
+    canvas.width = starsCanvas.width = window.innerWidth; 
+    canvas.height = starsCanvas.height = window.innerHeight; 
+}
+window.addEventListener('resize', resize); resize();
+const getGroundY = () => (canvas.height * 0.75) | 0;
+
+let stars = [];
+for (let i = 0; i < 150; i++) stars.push({ x: Math.random() * canvas.width - canvas.width/2, y: Math.random() * canvas.height - canvas.height/2, z: Math.random() * canvas.width });
+
+function updateStars() {
+    if (menuOverlay.style.display !== 'none') {
+        sCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+        const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2;
+        sCtx.fillStyle = "rgba(255, 245, 180, 0.8)";
+        for (let s of stars) {
+            s.z -= 5;
+            if (s.z <= 0) { s.z = starsCanvas.width; s.x = Math.random() * starsCanvas.width - cx; s.y = Math.random() * starsCanvas.height - cy; }
+            const px = cx + (s.x / s.z) * starsCanvas.width, py = cy + (s.y / s.z) * starsCanvas.height;
+            const size = (1 - s.z / starsCanvas.width) * 8;
+            sCtx.beginPath();
+            sCtx.moveTo(px, py - size * 1.5);
+            sCtx.lineTo(px + size * 0.4, py - size * 0.4);
+            sCtx.lineTo(px + size * 1.5, py);
+            sCtx.lineTo(px + size * 0.4, py + size * 0.4);
+            sCtx.lineTo(px, py + size * 1.5);
+            sCtx.lineTo(px - size * 0.4, py + size * 0.4);
+            sCtx.lineTo(px - size * 1.5, py);
+            sCtx.lineTo(px - size * 0.4, py - size * 0.4);
+            sCtx.closePath(); sCtx.fill();
+        }
+    }
+    requestAnimationFrame(updateStars);
+}
+updateStars();
+
+const raysGroup = document.getElementById('rays-group');
+for (let i = 0; i < 30; i++) {
+    const angle = (i * 360 / 30) + (Math.random() * 10);
+    const radCenter = angle * Math.PI / 180, radLeft = (angle - 1) * Math.PI / 180, radRight = (angle + 1) * Math.PI / 180;
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    polygon.setAttribute("points", `${Math.cos(radCenter)*250},${Math.sin(radCenter)*250} ${Math.cos(radLeft)*1200},${Math.sin(radLeft)*1200} ${Math.cos(radRight)*1200},${Math.sin(radRight)*1200}`);
+    polygon.setAttribute("fill", DARK_YELLOW); raysGroup.appendChild(polygon);
+}
+
+function createMountains(count, color, minH, maxH) {
+    let mts = []; let startX = 0;
+    for (let i = 0; i < count; i++) {
+        let segment = [{ x: 0, y: 0 }];
+        for (let j = 1; j <= 14; j++) segment.push({ x: (j/14) * canvas.width, y: -(Math.sin((j/14) * Math.PI) * (Math.random() * (maxH - minH) + minH)) });
+        segment.push({ x: canvas.width, y: 0 }); mts.push({ points: segment, color, xOffset: startX }); startX += canvas.width;
+    }
+    return mts;
+}
+let backMountains = createMountains(5, DARK_YELLOW, 120, 280), frontMountains = createMountains(4, SHADOW_YELLOW, 70, 190);
+
+const hero = {
+    w: 110, h: 158, x: 0, y: 0, dy: 0, angle: 0, grounded: false, doubleJumpAvailable: false, suspension: 0, fallingInPit: false,
+    init() { this.x = (canvas.width / 8) | 0; this.y = getGroundY() - this.h; this.dy = 0; this.angle = 0; this.doubleJumpAvailable = true; this.grounded = true; this.fallingInPit = false; this.suspension = 0; },
+    jump() { if (this.fallingInPit) return; if (this.grounded) { this.dy = -19; this.grounded = false; this.doubleJumpAvailable = true; this.suspension = 10; this.angle = -0.06; } else if (this.doubleJumpAvailable) { this.dy = -23; this.doubleJumpAvailable = false; this.suspension = 15; this.angle = -0.15; } },
+    update(ts) {
+        this.dy += 0.8 * ts; this.y += this.dy * ts; this.suspension *= (1 - 0.15 * ts);
+        if (invulFrames > 0) invulFrames -= ts;
+        if (boostTimer > 0) { boostTimer -= ts; if (frame % 2 === 0) createParticleTail(this.x + 10, this.y + this.h - 10, WHITE); }
+        if (superShotTimer > 0) { superShotTimer -= ts; if (frame % 5 === 0) bullets.push({ x: this.x + this.w - 10, y: this.y + this.h/2 + 8, isSuper: true }); }
+        if (shieldTimer > 0) { shieldTimer -= ts; if (frame % 3 === 0) createParticleTail(this.x + this.w/2, this.y + this.h/2, WHITE); }
+        if (isFiring && !isGameOver && !isFirstRun && ammo > 0 && superShotTimer <= 0) { let now = Date.now(); if (now - lastShotTime > 110) { fireBullet(); lastShotTime = now; } }
+        
+        const gy = getGroundY(); let onSolid = false, targetAngle = 0;
+        if (this.fallingInPit) { 
+            this.angle += 0.05 * ts; 
+            const pit = obstacles.find(o => o.type === 'pit' && this.x + this.w/2 > o.x && this.x + this.w/2 < o.x + o.w);
+            if (pit) { let localX = (this.x + this.w/2) - pit.x; let seg = pit.w / (pit.pitPoints.length - 1); let idx = Math.max(0, Math.min(Math.floor(localX / seg), pit.pitPoints.length - 2)); let t = (localX - pit.pitPoints[idx].x) / (pit.pitPoints[idx+1].x - pit.pitPoints[idx].x); let floorY = gy + (pit.pitPoints[idx].y + (pit.pitPoints[idx+1].y - pit.pitPoints[idx].y) * t); if (this.y + this.h >= floorY - 5) { triggerGameOver(); return; } }
+            else if (this.y + this.h >= gy - 5) { triggerGameOver(); return; } return; 
+        }
+        obstacles.forEach(o => { 
+            if (o.type === 'ramp' && this.x + this.w - 20 > o.x && this.x + 20 < o.x + o.w) { 
+                let relX = Math.max(0, Math.min(o.w, this.x + this.w - 60 - o.x)); let rampTop = gy - (relX / o.w) * o.h;
+                if (this.y + this.h >= rampTop - 10 && this.dy >= 0) { this.y = rampTop - this.h + 2; this.dy = 0; this.grounded = true; this.doubleJumpAvailable = true; onSolid = true; targetAngle = -Math.atan(o.h / o.w); if (relX >= o.w - 15) { this.dy = -26 - (o.h / 10); gameSpeed += (o.h / 5); this.grounded = false; shakeTime = 15; createExplosion(this.x, this.y + this.h, 15, WHITE); } }
+            }
+            if (boostTimer <= 0 && shieldTimer <= 0 && o.type === 'pit' && this.x + this.w/2 > o.x + 15 && this.x + this.w/2 < o.x + o.w - 15 && this.y + this.h >= gy - 5) { this.fallingInPit = true; this.grounded = false; }
+        });
+        if (!onSolid && !this.fallingInPit && this.y + this.h >= gy) { if (!this.grounded) { this.suspension = -8; if(boostTimer <= 0 && shieldTimer <= 0) shakeTime = 10; } this.y = gy - this.h; this.dy = 0; this.grounded = true; this.doubleJumpAvailable = true; targetAngle = 0; }
+        else if (!onSolid && this.y + this.h < gy) this.grounded = false;
+        this.angle += (targetAngle - this.angle) * 0.2 * ts;
+    },
+    draw(cameraY) {
+        if (invulFrames > 0 && boostTimer <= 0 && shieldTimer <= 0 && Math.floor(frame / 4) % 2 === 0) return;
+        let img; const animIdx = Math.floor(frame / 6) % 6; const isActuallyFiring = isFiring || (superShotTimer > 0);
+        if (boostTimer > 0) img = isActuallyFiring ? heroBoostShoot : heroBoost;
+        else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand);
+        else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx];
+        ctx.save(); ctx.translate(this.x + this.w/2, this.y + this.h/2 + cameraY); ctx.rotate(this.angle);
+        if (shieldTimer > 0) { for (let i = 0; i < 3; i++) { let rp = ((frame + i * 20) % 60) / 60, al = 1 - rp; ctx.strokeStyle = `rgba(255, 255, 255, ${al})`; ctx.lineWidth = 1 + rp * 8; ctx.beginPath(); ctx.arc(0, 0, (this.w / 1.5) + rp * 70, 0, Math.PI * 2); ctx.stroke(); } }
+        ctx.drawImage(img, -this.w/2, -this.h/2 - this.suspension + 2, this.w, this.h); ctx.restore();
+    }
+};
+
+function fireBullet() { ammo--; ammoCountEl.innerText = Math.max(0, ammo); bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 + cameraScrollY }); }
+function addEnemyKill() { enemiesDefeated++; zombiesToBonus++; enemiesEl.innerText = enemiesDefeated; enemiesEl.classList.remove('score-bump'); void enemiesEl.offsetWidth; enemiesEl.classList.add('score-bump'); if (zombiesToBonus >= 10) { zombiesToBonus = 0; ammo += 5; ammoCountEl.innerText = ammo; } }
+function takeDamage(amount) { if (invulFrames > 0 || boostTimer > 0 || shieldTimer > 0 || isGameOver) return; hp = Math.max(0, hp - amount); updateHPBar(); invulFrames = 60; shakeTime = 20; createExplosion(hero.x + hero.w/2, hero.y + hero.h/2, 15, WHITE); if (hp <= 0) triggerGameOver(); }
+function updateHPBar() { hpBar.style.width = hp + '%'; }
+function createExplosion(x, y, count = 20, color = WHITE) { for(let i=0; i<count; i++) particles.push({x, y, vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25, life: 1, s: Math.random()*8+2, color, type: 'spark'}); }
+function createParticleTail(x, y, color = WHITE) { particles.push({ x, y: y + (Math.random() - 0.5) * 10, vx: -Math.random() * 15 - 5, vy: (Math.random() - 0.5) * 6, life: 1, s: Math.random() * 5 + 2, color, type: 'star' }); }
+
+function render(currentTime) {
+    if (!lastTime) lastTime = currentTime; let ts = Math.min((currentTime - lastTime) / 16.6, 2); lastTime = currentTime; frame++; 
+    if (!isGameOver) { 
+        baseSpeed += 0.0012 * ts; gameSpeed = boostTimer > 0 ? Math.min(gameSpeed + 1.2 * ts, 48) : Math.max(baseSpeed, gameSpeed - 0.15 * ts);
+        distance += (gameSpeed * ts) / 10; 
+        distValEl.innerHTML = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(1) + "<span class='km-unit'>км</span>";
+        let targetCamY = hero.y < canvas.height/2 ? (canvas.height/2 - hero.y) : 0; cameraScrollY += (targetCamY - cameraScrollY) * 0.1 * ts;
+    } else cameraScrollY *= (1 - 0.05 * ts);
+
+    const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0); if (shakeTime > 0) shakeTime--;
+    ctx.fillStyle = MAIN_YELLOW; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawMountainsLayer(backMountains, frame * gameSpeed * 0.1, fcy * 0.5); 
+    drawMountainsLayer(frontMountains, frame * gameSpeed * 0.3, fcy * 0.8);
+    ctx.fillStyle = BLACK; ctx.fillRect(0, gy + fcy, canvas.width, canvas.height + 1500);
+
+    obstacles.forEach(o => {
+        o.x -= gameSpeed * ts; let drawY = gy + fcy;
+        if (o.type === 'pit') { ctx.fillStyle = PIT_COLOR; ctx.beginPath(); ctx.moveTo(o.x, drawY - 2); o.pitPoints.forEach(p => ctx.lineTo(o.x + p.x, drawY + p.y)); ctx.lineTo(o.x + o.w, drawY - 2); ctx.fill(); }
+        else if (o.type === 'ramp') { ctx.fillStyle = BLACK; ctx.beginPath(); ctx.moveTo(o.x + o.rampPoints[0].x, drawY + o.rampPoints[0].y); o.rampPoints.forEach(p => ctx.lineTo(o.x + p.x, drawY + p.y)); ctx.lineTo(o.x + o.w + 40, drawY + 100); ctx.lineTo(o.x - 40, drawY + 100); ctx.closePath(); ctx.fill(); }
+        else if (o.type === 'zombie') ctx.drawImage(zombieImages[o.zombieIdx], o.x, gy - o.h + fcy + 12, o.w, o.h);
+        else if (o.type === 'flyer') { o.currentY = o.baseY + Math.sin(frame * 0.05 + o.x * 0.01) * 30; ctx.drawImage(flyingImages[o.flyIdx], o.x, o.currentY + fcy, o.w, o.h); }
+        else if (o.type === 'shield') ctx.drawImage(shieldImg, o.x, gy-o.itemH-o.offY+fcy, o.itemW, o.itemH);
+        else ctx.drawImage(({ammo:ammoImg, life:lifeImg, boost:boostImg, superShot:superShotImg}[o.type]), o.x, gy-60-o.offY+fcy, 60, 60);
+
+        if (!isGameOver && !o.hit) {
+            let it = (o.type === 'zombie') ? gy - o.h : (o.type === 'flyer' ? o.currentY : gy - (o.itemH || 60) - o.offY);
+            if (hero.x < o.x + (o.w || o.itemW) - 10 && hero.x + hero.w > o.x + 10 && hero.y < it + (o.h || o.itemH) && hero.y + hero.h > it) {
+                if (o.type === 'ammo') { o.hit = true; ammo += 5; ammoCountEl.innerText = ammo; }
+                else if (o.type === 'life') { o.hit = true; hp = Math.min(100, hp + 30); updateHPBar(); }
+                else if (o.type === 'boost') { o.hit = true; boostTimer = 350; }
+                else if (o.type === 'superShot') { o.hit = true; superShotTimer = 400; }
+                else if (o.type === 'shield') { o.hit = true; shieldTimer = 380; }
+                else if (o.type === 'zombie' || o.type === 'flyer') { if (boostTimer > 0 || shieldTimer > 0) { o.hit = true; addEnemyKill(); } else if (hero.dy > 0 && (hero.y + hero.h) <= (it + 100)) { o.hit = true; addEnemyKill(); hero.dy = -14; createExplosion(o.x + o.w/2, it + o.h/2, 15); } else { takeDamage(20); o.hit = true; } }
+            }
+        }
+    });
+
+    if (!isGameOver) { hero.update(ts); hero.draw(fcy); }
+    obstacles = obstacles.filter(o => o.x > -800 && !o.hit);
+    particles = particles.filter(p => { p.x += p.vx * ts; p.y += p.vy * ts; p.life -= 0.02 * ts; ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(p.x, p.y + fcy, p.s, p.s); ctx.globalAlpha = 1; return p.life > 0; });
+    bullets = bullets.filter(b => { b.x += 28 * ts; ctx.fillStyle = WHITE; ctx.fillRect(b.x, b.y + (fcy - cameraScrollY), b.isSuper ? 40 : 20, 4); obstacles.forEach(o => { let tt = (o.type === 'flyer' ? o.currentY : gy - o.h); if ((o.type === 'zombie' || o.type === 'flyer') && !o.hit && b.x > o.x && b.x < o.x+o.w && (b.y - cameraScrollY) > tt && (b.y - cameraScrollY) < tt + o.h) { o.hit = true; addEnemyKill(); createExplosion(o.x+o.w/2, tt+o.h/2, 30); } }); return b.x < canvas.width; });
+    if (frame % 60 === 0 && !isGameOver) spawnObstacle();
+    
+    if (isGameOver) { 
+        gameOverTimer--; 
+        if (gameOverTimer < 90) { 
+            menuOverlay.style.display = 'flex'; 
+            menuOverlay.style.opacity = Math.min(1, (90 - gameOverTimer) / 60); 
+        } 
+        if (gameOverTimer < -60 && !canRestart) { 
+            canRestart = true; 
+            controlsText.innerText = "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; 
+            controlsText.classList.add('show-text'); 
+        } 
+    }
+    animationId = requestAnimationFrame(render);
+}
+
+function drawMountainsLayer(mountainsArray, camX, camY) { 
+    const gy = getGroundY(), tw = mountainsArray.length * canvas.width;
+    mountainsArray.forEach(mt => { 
+        let dx = (mt.xOffset - camX) % tw; if (dx < -canvas.width) dx += tw; if (dx > canvas.width) dx -= tw; 
+        ctx.fillStyle = mt.color; ctx.beginPath(); ctx.moveTo(dx, canvas.height + 2000); ctx.lineTo(dx + mt.points[0].x, gy + mt.points[0].y + camY); 
+        for (let j = 1; j < mt.points.length; j++) ctx.lineTo(dx + mt.points[j].x, gy + mt.points[j].y + camY); 
+        ctx.lineTo(dx + canvas.width, canvas.height + 2000); ctx.closePath(); ctx.fill(); 
+    }); 
+}
+
+function triggerGameOver() { 
+    if (isGameOver) return; 
+    isGameOver = true; 
+    isFiring = false; 
+    gameOverTimer = 150; 
+    shakeTime = 40; 
+    canRestart = false; 
+    controlsText.classList.remove('show-text'); 
+    
+    const distText = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(1) + "км";
+    topInfoText.innerText = "ДИСТАНЦИЯ: " + distText;
+    
+    // Меняем картинку и шрифт числа при смерти
+    menuStatusImg.src = "https://static.tildacdn.com/tild6562-6538-4338-b234-663764356163/1.png";
+    finalScoreVal.innerText = enemiesDefeated;
+    finalScoreVal.style.display = "inline-block";
+    
+    createExplosion(hero.x + hero.w/2, hero.y + hero.h/2, 80, WHITE); 
+}
+
+function spawnObstacle() {
+    if (obstacles.length > 0 && obstacles[obstacles.length-1].x > canvas.width - 350) return;
+    const r = Math.random(); 
+    if (r < 0.15) { let sz = 60 + Math.random()*80, alt = 150 + Math.random()*(getGroundY()-350); obstacles.push({ x: canvas.width, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*2) }); return; }
+    let type;
+    if (boostTimer > 0 || shieldTimer > 0) type = r > 0.8 ? 'ramp' : (r > 0.3 ? 'zombie' : (r > 0.22 ? 'superShot' : (r > 0.15 ? 'pit' : 'ammo')));
+    else type = r > 0.9 ? 'ramp' : (r > 0.82 ? 'pit' : (r > 0.79 ? 'shield' : (r > 0.76 ? 'superShot' : (r > 0.73 ? 'ammo' : (r > 0.7 ? 'life' : (r > 0.67 ? 'boost' : 'zombie'))))));
+    if (type === 'zombie') { let c = 2 + Math.floor(Math.random()*4), sx = canvas.width; for(let i=0; i<c; i++) { let hz = 130 + Math.random()*150; obstacles.push({ x: sx + (i*90), y: getGroundY(), w: hz*0.8, h: hz, type: 'zombie', hit: false, zombieIdx: Math.floor(Math.random()*7) }); } return; }
+    let w = 60, h = 60, rp = [], pp = [];
+    if (type === 'pit') { w = Math.random()*200 + 200; pp = [{x:0, y:0}]; for(let i=1; i<8; i++) pp.push({x:(i/8)*w, y: Math.random()*180+120}); pp.push({x:w, y:0}); }
+    else if (type === 'ramp') { let sz = Math.random(); w = sz > 0.85 ? 450 : (sz > 0.6 ? 320 : 240); h = sz > 0.85 ? 180 : (sz > 0.6 ? 110 : 60); rp = [{x:0, y:0}, {x:w, y:-h}, {x:w+25, y:-h*0.6}, {x:w+15, y:-h*0.3}, {x:w+30, y:0}]; }
+    obstacles.push({ x: canvas.width, y: getGroundY(), w, h, offY: (type!=='pit'&&type!=='ramp'?Math.random()*300+30:0), type, hit: false, pitPoints: pp, rampPoints: rp, itemW: 60, itemH: type==='shield'?(245/204)*60:60 });
+}
+
+function start() { 
+    menuOverlay.style.opacity = 0; 
+    
+    // Задержка обновлений интерфейса меню, чтобы они не мелькали перед глазами
+    setTimeout(() => { 
+        if (!isGameOver) {
+            menuOverlay.style.display = 'none'; 
+            
+            // Возвращаем стартовые тексты только когда меню уже скрыто
+            topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ";
+            menuStatusImg.src = "https://static.tildacdn.com/tild3766-6665-4837-b430-353063666562/1.png";
+            finalScoreVal.style.display = "none";
+            controlsText.innerText = "ПРОБЕЛ: ПРЫГАЙ | КОНТРЛ: СТРЕЛЯЙ";
+        }
+    }, 200); 
+
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; zombiesToBonus = 0; 
+    ammoCountEl.innerText = ammo; enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); 
+    invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; 
+    baseSpeed = 9; gameSpeed = 9; frame = 0; obstacles = []; bullets = []; particles = []; 
+    canRestart = false; cameraScrollY = 0; hero.init(); 
+    cancelAnimationFrame(animationId); requestAnimationFrame(render); 
+}
+
+window.addEventListener('keydown', (e) => { 
+    if (e.code === 'Space') { 
+        e.preventDefault(); 
+        if (isFirstRun || (isGameOver && canRestart)) start(); 
+        else hero.jump(); 
+    } 
+    if (e.key === 'Control' && !isGameOver && !isFirstRun) { 
+        isFiring = true; 
+        if (ammo > 0 && superShotTimer <= 0 && Date.now()-lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } 
+    } 
+});
+window.addEventListener('keyup', (e) => { if (e.key === 'Control') isFiring = false; });
+</script>
+</body>
+</html>
