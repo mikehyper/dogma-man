@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOGMA MAN</title>
     
-    <meta property="og:type" content="website">
     <meta property="og:title" content="DOGMA MAN">
-    <meta property="og:description" content="На планету напали инопланетные монстры! Уничтожай пришельцев в динамичном раннере.">
+    <meta property="og:description" content="Уничтожай пришельцев!">
     <meta property="og:image" content="img/dogma_prew.png">
-    <meta property="og:url" content=""> <meta name="twitter:card" content="summary_large_image">
+    <meta property="og:type" content="website">
+    
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="DOGMA MAN">
     <meta name="twitter:description" content="Уничтожай пришельцев!">
     <meta name="twitter:image" content="img/dogma_prew.png">
@@ -164,30 +164,6 @@
     <canvas id="gameCanvas"></canvas>
 
 <script>
-// --- ГЛОБАЛЬНАЯ ПРОВЕРКА МОБИЛЬНОГО УСТРОЙСТВА ---
-const IS_MOBILE_DEVICE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// --- НАСТРОЙКИ ГРОМКОСТИ ---
-const VOLUMES = {
-    bg: IS_MOBILE_DEVICE ? 0 : 0.6,
-    mainMusic: IS_MOBILE_DEVICE ? 0 : 0.3,
-    jump: IS_MOBILE_DEVICE ? 0 : 0.5,
-    land: IS_MOBILE_DEVICE ? 0 : 0.9,
-    shoot: IS_MOBILE_DEVICE ? 0 : 0.6,
-    death_enemy: IS_MOBILE_DEVICE ? 0 : 0.8,
-    life: IS_MOBILE_DEVICE ? 0 : 0.6,
-    shield: IS_MOBILE_DEVICE ? 0 : 0.6,
-    ammo: IS_MOBILE_DEVICE ? 0 : 0.9,
-    super: IS_MOBILE_DEVICE ? 0 : 0.4,
-    boost: IS_MOBILE_DEVICE ? 0 : 0.6,
-    cool: IS_MOBILE_DEVICE ? 0 : 1,
-    death: IS_MOBILE_DEVICE ? 0 : 0.6,
-    woosh: IS_MOBILE_DEVICE ? 0 : 0.4, 
-    power: IS_MOBILE_DEVICE ? 0 : 0.4,
-    ice: IS_MOBILE_DEVICE ? 0 : 0.8,
-    shh: IS_MOBILE_DEVICE ? 0 : 0.9
-};
-
 function adjustMenuScale() {
     const comp = document.getElementById('menu-comp');
     if(!comp) return;
@@ -210,9 +186,10 @@ async function initFonts() {
 }
 initFonts();
 
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 window.addEventListener('DOMContentLoaded', () => {
     const ctrlText = document.getElementById('controls-text');
-    if (IS_MOBILE_DEVICE) ctrlText.innerText = "ТАП СЛЕВА: ПРЫГАЙ | ТАП СПРАВА: СТРЕЛЯЙ";
+    if (isMobileDevice) ctrlText.innerText = "ТАП СЛЕВА: ПРЫГАЙ | ТАП СПРАВА: СТРЕЛЯЙ";
 });
 
 const sounds = {
@@ -237,39 +214,54 @@ const sounds = {
     shh: new Audio('sound/shh.wav')   
 };
 
+// Принудительное отключение звука на мобильных устройствах
+if (isMobileDevice) {
+    for (let key in sounds) {
+        sounds[key].muted = true;
+        sounds[key].volume = 0;
+        // Переопределяем метод play, чтобы он ничего не делал
+        sounds[key].play = function() { return Promise.resolve(); };
+    }
+}
+
+// Плейлист
 let mainPlaylist = [sounds.m1, sounds.m2, sounds.m3];
 let currentTrackIdx = Math.floor(Math.random() * mainPlaylist.length);
 let currentTrack = mainPlaylist[currentTrackIdx];
 
+// Настройка переключения треков и громкости
 mainPlaylist.forEach((track, index) => {
-    track.volume = VOLUMES.mainMusic;
+    if (!isMobileDevice) track.volume = 0.3;
     track.addEventListener('ended', () => {
         currentTrackIdx = (currentTrackIdx + 1) % mainPlaylist.length;
         currentTrack = mainPlaylist[currentTrackIdx];
         currentTrack.currentTime = 0;
-        if (currentTrack.volume > 0) currentTrack.play();
+        currentTrack.play();
     });
 });
 
-sounds.bg.loop = true; sounds.bg.volume = VOLUMES.bg;
-sounds.jump.volume = VOLUMES.jump;
-sounds.land.volume = VOLUMES.land;
-sounds.shoot.volume = VOLUMES.shoot;
-sounds.death_enemy.volume = VOLUMES.death_enemy;
-sounds.life.volume = VOLUMES.life;
-sounds.shield.volume = VOLUMES.shield;
-sounds.ammo.volume = VOLUMES.ammo;
-sounds.super.volume = VOLUMES.super;
-sounds.boost.volume = VOLUMES.boost;
-sounds.cool.volume = VOLUMES.cool;
-sounds.death.volume = VOLUMES.death;
-sounds.woosh.loop = true; sounds.woosh.volume = VOLUMES.woosh;
-sounds.power.loop = true; sounds.power.volume = VOLUMES.power;
-sounds.ice.volume = VOLUMES.ice;
-sounds.shh.volume = VOLUMES.shh;
+if (!isMobileDevice) {
+    sounds.bg.loop = true; sounds.bg.volume = 0.6;
+    sounds.jump.volume = 0.5;
+    sounds.land.volume = 0.9;
+    sounds.shoot.volume = 0.6;
+    sounds.death_enemy.volume = 0.8;
+    sounds.life.volume = 0.6;
+    sounds.shield.volume = 0.6;
+    sounds.ammo.volume = 0.9;
+    sounds.super.volume = 0.6;
+    sounds.boost.volume = 0.6;
+    sounds.cool.volume = 1;
+    sounds.death.volume = 0.6;
+    sounds.woosh.loop = true; sounds.woosh.volume = 0.4; 
+    sounds.power.loop = true; sounds.power.volume = 0.4;
+    sounds.ice.volume = 0.8;
+    sounds.shh.volume = 0.9;
+}
 
-function playShh() {}
-function showMenuSounds() {}
+// Звуки "shh" полностью отключены для всех устройств по заданию
+function playShh() { /* Звук отключен */ }
+function showMenuSounds() { /* Звуки появления объектов отключены */ }
 
 const loadImg = (n) => { const i = new Image(); i.src = 'img/' + n; return i; };
 const heroRun = ['run1.png','run2.png','run3.png','run4.png','run5.png','run6.png'].map(loadImg);
@@ -358,7 +350,7 @@ const hero = {
             const isBoost = boostTimer > 0; 
             const maxJumps = isBoost ? 15 : 2; 
             if (this.jumpCount < maxJumps && (this.grounded || this.jumpCount > 0 || isBoost)) { 
-                if (VOLUMES.jump > 0) { sounds.jump.currentTime = 0; sounds.jump.play(); }
+                sounds.jump.currentTime = 0; sounds.jump.play(); 
                 let boostPower = isBoost ? (this.y < -1000 ? -12 : -19) : -19; 
                 this.dy = boostPower - (Math.min(this.jumpCount, 15) * 0.5); 
                 this.grounded = false; this.jumpCount++; 
@@ -372,7 +364,7 @@ const hero = {
         if (invulFrames > 0) invulFrames -= ts;
         
         if (boostTimer > 0) { 
-            if (sounds.woosh.paused && VOLUMES.woosh > 0) sounds.woosh.play();
+            if (sounds.woosh.paused) sounds.woosh.play();
             boostTimer -= ts; 
             if (frame % 2 === 0) createParticleTail(this.x + 45, this.y + 75 + (Math.random()-0.5)*40); 
             if (boostTimer <= 0) {
@@ -381,13 +373,18 @@ const hero = {
                 sounds.woosh.currentTime = 0;
             }
         }
+        
         if (boostExitSafety > 0) boostExitSafety -= ts;
+        
         if (superShotTimer > 0) { 
             superShotTimer -= ts; 
-            if (frame % 5 === 0) fireBullet(true); 
+            if (frame % 5 === 0) {
+                fireBullet(true); 
+            }
         }
+        
         if (shieldTimer > 0) {
-            if (sounds.power.paused && VOLUMES.power > 0) sounds.power.play();
+            if (sounds.power.paused) sounds.power.play();
             shieldTimer -= ts;
             if (shieldTimer <= 0) {
                 sounds.power.pause();
@@ -396,6 +393,7 @@ const hero = {
         }
         
         if (isFiring && !isGameOver && !isFirstRun && (ammo > 0) && superShotTimer <= 0) { let now = Date.now(); if (now - lastShotTime > 110) { fireBullet(); lastShotTime = now; } }
+        
         const gy = getGroundY(); let onSolid = false, targetAngle = 0;
         if (this.fallingInPit) { this.angle += 0.12 * ts; if (hp > 0) { hp = Math.max(0, hp - 5 * ts); updateHPBar(); } if (this.y + this.h/2 >= gy + 60) { if (!isGameOver) { createExplosion(this.x + this.w/2, gy + 100, 40, WHITE); triggerGameOver(); } } return; }
         
@@ -419,7 +417,7 @@ const hero = {
             if (!this.grounded) { 
                 this.suspension = -8; 
                 if(boostTimer <= 0 && shieldTimer <= 0 && gameSpeed < baseSpeed + 2) shakeTime = distance < 5 ? 25 : 10;
-                if (VOLUMES.land > 0) { sounds.land.currentTime = 0; sounds.land.play(); }
+                sounds.land.currentTime = 0; sounds.land.play(); 
             } 
             this.y = gy - this.h; this.dy = 0; this.grounded = true; this.jumpCount = 0; targetAngle = 0; airKills = 0;
         } else if (!onSolid && this.y + this.h < gy) { this.grounded = false; targetAngle = 0; }
@@ -452,22 +450,22 @@ function updateAmmo(newVal) {
 
 function fireBullet(isSuper = false) { 
     if (!isSuper) updateAmmo(ammo - 1); 
-    if (VOLUMES.shoot > 0) { sounds.shoot.currentTime = 0; sounds.shoot.play(); }
+    sounds.shoot.currentTime = 0; sounds.shoot.play(); 
     bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 }); 
 }
 
 function addEnemyKill() { 
     enemiesDefeated++; 
-    if (VOLUMES.death_enemy > 0) { sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); }
+    sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); 
     if (!hero.grounded) {
         airKills++;
-        if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); if (VOLUMES.ammo > 0) { sounds.ammo.currentTime = 0; sounds.ammo.play(); } }
+        if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); sounds.ammo.currentTime = 0; sounds.ammo.play(); }
     }
     enemiesEl.innerText = enemiesDefeated; 
     if (enemiesDefeated > 0 && enemiesDefeated % 10 === 0) {
         triggerBonusPulse(killedWrapper);
         updateAmmo(ammo + 5);
-        if (VOLUMES.cool > 0) { sounds.cool.currentTime = 0; sounds.cool.play(); }
+        sounds.cool.currentTime = 0; sounds.cool.play();
     }
 }
 
@@ -490,6 +488,9 @@ function createParticleTail(x, y) {
     const r = Math.random(); 
     let c = r<0.2?'#8A2BE2':r<0.4?'#DDA0DD':WHITE; 
     particles.push({ x, y, vx: -Math.random()*15-5, vy: (Math.random()-0.5)*6, life: 1, s: Math.random()*7+3, color: c, type: 'star' }); 
+    if (Math.random() < 0.2) {
+        particles.push({ x: x + 20, y: y + (Math.random()-0.5)*60, vx: -Math.random()*8-2, vy: (Math.random()-0.5)*4, life: 0.8, s: Math.random()*3+1, color: WHITE, type: 'star' });
+    }
 }
 
 function spawnObstacle() {
@@ -497,12 +498,13 @@ function spawnObstacle() {
     if (currentX - lastSpawnDist > nextSpawnGoal) {
         lastSpawnDist = currentX; nextSpawnGoal = (superShotTimer > 0) ? (300 + Math.random() * 350) : (600 + Math.random() * 650); 
         const r = Math.random(); let type; const gy = getGroundY();
+        
         if (distance >= 15000 && baseSpeed >= 55 && (distance - lastIceDist > 5000) && Math.random() < 0.07) { type = 'ice'; lastIceDist = distance; }
         else if (cameraScrollY > 1500 && Math.random() < 0.7) type = 'space_leviathan';
         else if (superShotTimer > 0) type = (Math.random() < 0.7) ? 'flyer' : 'zombie'; 
         else { if (r < 0.22) type = 'flyer'; else if (r < 0.34) type = 'pit'; else if (r < 0.44) type = 'ramp'; else if (r < 0.49) type = 'ammo'; else if (r < 0.52) type = 'life'; else if (r < 0.55) type = 'boost'; else if (r < 0.58) type = 'shield'; else if (r < 0.61) type = 'superShot'; else type = 'zombie'; }
-        if (type === 'pit' && (boostExitSafety > 0 || gameSpeed > baseSpeed + 2)) type = 'zombie';
         
+        if (type === 'pit' && (boostExitSafety > 0 || gameSpeed > baseSpeed + 2)) type = 'zombie';
         if (type === 'ice') obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: 0, type: 'ice', hit: false });
         else if (type === 'space_leviathan') { let alt = -cameraScrollY - 200 - Math.random() * 500; obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: 350, h: 350, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length), isDark: true }); }
         else if (type === 'flyer') { let alt = (boostTimer > 0) ? (Math.random() * -1800 - 200) : (80 + Math.random() * (gy - 250)); let sz = (80 + Math.random() * 110) * (boostTimer > 0 ? 1.6 : 1); obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length) }); } 
@@ -548,12 +550,12 @@ function render(currentTime) {
             let it = (o.type === 'zombie') ? (gy - o.h) : (o.type === 'flyer' ? o.currentY : gy - (o.currentDrawH || 60) - o.offY); 
             let tw = o.currentDrawW || o.w || 60, th = o.currentDrawH || o.h || 60; 
             if (hero.x < o.x + tw - 20 && hero.x + hero.w > o.x + 20 && hero.y < it + th && hero.y + hero.h > it) { 
-                if(o.type==='ammo') { o.hit = true; if (VOLUMES.ammo > 0) { sounds.ammo.currentTime = 0; sounds.ammo.play(); } updateAmmo(ammo + 10); createExplosion(o.x + tw/2, it + th/2, 10, WHITE, 'sun_rays'); } 
-                else if(o.type==='life') { o.hit = true; if (VOLUMES.life > 0) { sounds.life.currentTime = 0; sounds.life.play(); } hp = Math.min(100, hp + 30); updateHPBar(); createExplosion(o.x + tw/2, it + th/2, 12, '#dd2211', 'heart'); } 
-                else if(o.type==='boost') { o.hit = true; if (VOLUMES.boost > 0) { sounds.boost.currentTime = 0; sounds.boost.play(); } boostTimer = 350; createExplosion(o.x + tw/2, it + th/2, 20, WHITE, 'star'); }
-                else if(o.type==='superShot') { o.hit = true; if (VOLUMES.super > 0) { sounds.super.currentTime = 0; sounds.super.play(); } superShotTimer = 400; createExplosion(o.x + tw/2, it + th/2, 12, WHITE, 'sun_rays'); } 
-                else if(o.type==='shield') { o.hit = true; if (VOLUMES.shield > 0) { sounds.shield.currentTime = 0; sounds.shield.play(); } shieldTimer = 380; createExplosion(o.x + tw/2, it + th/2, 15, '#f08614', 'square'); }
-                else if(o.type==='ice') { o.hit = true; if (VOLUMES.ice > 0) { sounds.ice.currentTime = 0; sounds.ice.play(); } targetBaseSpeed = baseSpeed * 0.6; isBraking = true; createExplosion(o.x + tw/2, it + th/2, 20, '#00f2ff', 'square'); }
+                if(o.type==='ammo') { o.hit = true; sounds.ammo.currentTime = 0; sounds.ammo.play(); updateAmmo(ammo + 10); createExplosion(o.x + tw/2, it + th/2, 10, WHITE, 'sun_rays'); } 
+                else if(o.type==='life') { o.hit = true; sounds.life.currentTime = 0; sounds.life.play(); hp = Math.min(100, hp + 30); updateHPBar(); createExplosion(o.x + tw/2, it + th/2, 12, '#dd2211', 'heart'); } 
+                else if(o.type==='boost') { o.hit = true; sounds.boost.currentTime = 0; sounds.boost.play(); boostTimer = 350; createExplosion(o.x + tw/2, it + th/2, 20, WHITE, 'star'); }
+                else if(o.type==='superShot') { o.hit = true; sounds.super.currentTime = 0; sounds.super.play(); superShotTimer = 400; createExplosion(o.x + tw/2, it + th/2, 12, WHITE, 'sun_rays'); } 
+                else if(o.type==='shield') { o.hit = true; sounds.shield.currentTime = 0; sounds.shield.play(); shieldTimer = 380; createExplosion(o.x + tw/2, it + th/2, 15, '#f08614', 'square'); }
+                else if(o.type==='ice') { o.hit = true; sounds.ice.currentTime = 0; sounds.ice.play(); targetBaseSpeed = baseSpeed * 0.6; isBraking = true; createExplosion(o.x + tw/2, it + th/2, 20, '#00f2ff', 'square'); }
                 else if (o.type === 'zombie' || o.type === 'flyer') { 
                     o.hit = true; addEnemyKill(); createExplosion(o.x+tw/2, it+th/2, o.isElite ? 35 : 15, WHITE, 'square'); 
                     if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { 
@@ -582,7 +584,7 @@ function render(currentTime) {
         gameOverTimer--; if (gameOverTimer < 90) { menuOverlay.style.display = 'flex'; menuOverlay.style.opacity = Math.min(1, (90 - gameOverTimer) / 60); } 
         if (gameOverTimer < -60 && !canRestart) { 
             canRestart = true; 
-            controlsText.innerText = IS_MOBILE_DEVICE ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; 
+            controlsText.innerText = isMobileDevice ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; 
             controlsText.classList.add('show-text'); 
         } 
     }
@@ -596,33 +598,21 @@ function drawStaticObjectsLayer(data, camX, camY) { const gy = getGroundY(), tw 
 
 function triggerGameOver() { 
     if (isGameOver) return; isGameOver = true; isFiring = false; 
-    let fadeOut = setInterval(() => {
-        if (currentTrack.volume > 0.01) { currentTrack.volume -= 0.01; } 
-        else { currentTrack.volume = 0; currentTrack.pause(); clearInterval(fadeOut); }
-    }, 20);
+    let fadeOut = setInterval(() => { if (currentTrack.volume > 0.01) { currentTrack.volume -= 0.01; } else { currentTrack.volume = 0; currentTrack.pause(); clearInterval(fadeOut); } }, 20); 
     sounds.woosh.pause(); sounds.power.pause();
-    if (VOLUMES.death > 0) sounds.death.play(); 
-    if (VOLUMES.bg > 0) {
-        sounds.bg.currentTime = 0; sounds.bg.volume = 0; sounds.bg.play();
-        let fadeIn = setInterval(() => {
-            if (sounds.bg.volume < VOLUMES.bg - 0.02) { sounds.bg.volume += 0.01; } 
-            else { sounds.bg.volume = VOLUMES.bg; clearInterval(fadeIn); }
-        }, 50);
-    }
+    sounds.death.play(); 
+    sounds.bg.currentTime = 0; sounds.bg.play(); 
     gameOverTimer = 150; shakeTime = 40; canRestart = false; 
     controlsText.classList.remove('show-text'); 
     const dText = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(1) + "км"; 
     topInfoText.innerText = "ДИСТАНЦИЯ: " + dText; 
-    menuStatusWrapper.style.fontSize = IS_MOBILE_DEVICE ? "45px" : "75px"; 
+    menuStatusWrapper.style.fontSize = isMobileDevice ? "45px" : "75px"; 
     menuStatusWrapper.innerText = "УНИЧТОЖЕНО: " + enemiesDefeated; 
     adjustMenuScale();
 }
 
 function start() { 
-    sounds.bg.pause(); 
-    if (VOLUMES.mainMusic > 0) {
-        currentTrack.volume = VOLUMES.mainMusic; currentTrack.currentTime = 0; currentTrack.play(); 
-    }
+    sounds.bg.pause(); if (!isMobileDevice) currentTrack.volume = 0.3; currentTrack.currentTime = 0; currentTrack.play(); 
     menuOverlay.style.opacity = 0; setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200); 
     isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; nextSpawnGoal = 500; lastIceDist = 0; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0; cheatLife = false; 
     killedWrapper.classList.remove('pulse-bonus'); ammoCountEl.classList.remove('pulse-bonus');
@@ -631,7 +621,7 @@ function start() {
 
 window.addEventListener('keydown', (e) => { 
     if (e.key === 'Alt') { e.preventDefault(); cheatLife = false; gameSpeed = baseSpeed; cheatBuffer = ""; return; }
-    if (e.key.length === 1) { cheatBuffer += e.key.toLowerCase(); if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.substring(1); if (cheatBuffer.endsWith("life") || cheatBuffer.endsWith("дшау")) { cheatLife = !cheatLife; if (VOLUMES.life > 0) sounds.life.play(); cheatBuffer = ""; } }
+    if (e.key.length === 1) { cheatBuffer += e.key.toLowerCase(); if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.substring(1); if (cheatBuffer.endsWith("life") || cheatBuffer.endsWith("дшау")) { cheatLife = !cheatLife; sounds.life.play(); cheatBuffer = ""; } }
     if (e.code === 'Space') { e.preventDefault(); if (isFirstRun || (isGameOver && canRestart)) start(); else hero.jump(); } 
     if (e.key === 'Control' && !isGameOver && !isFirstRun) { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now()-lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } } 
 });
@@ -646,7 +636,9 @@ window.addEventListener('touchend', (e) => {
     if (!stillFiring) isFiring = false;
 });
 
-window.addEventListener('load', () => { if (!IS_MOBILE_DEVICE) showMenuSounds(); });
+window.addEventListener('load', () => { 
+    if (!isMobileDevice) showMenuSounds(); 
+});
 </script>
 </body>
 </html>
