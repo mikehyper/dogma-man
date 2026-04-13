@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>DOGMA MAN</title>
     
     <meta property="og:title" content="DOGMA MAN">
@@ -30,10 +31,18 @@
             background-color: #ffc240; 
             font-family: 'Pribambas', 'Impact', sans-serif; 
             touch-action: none; 
+            color: #000;
         }
         
         canvas { display: block; image-rendering: pixelated; }
         
+        /* Сброс синих ссылок и выделений */
+        a, button, input, span, div {
+            -webkit-tap-highlight-color: transparent;
+            color: inherit;
+            text-decoration: none;
+        }
+
         #menu-overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -55,6 +64,194 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 10; transform-origin: center center;
         }
+
+        /* --- AUTH STYLES --- */
+        #auth-top-layer {
+            position: absolute; top: 20px; left: 0; width: 100%;
+            padding: 0 15px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            z-index: 300; pointer-events: auto;
+            box-sizing: border-box;
+            transform-origin: top left;
+        }
+
+        .auth-btn-group { display: flex; gap: 10px; flex-wrap: nowrap; justify-content: flex-start; }
+
+        .dogma-btn {
+            background: #ffc240;
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0 #000;
+            padding: 0 20px;
+            height: 54px;
+            font-family: 'Pribambas', sans-serif;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+            transition: transform 0.1s, background 0.2s;
+            transform: scale(0);
+            animation: popInCenter 0.5s 0.2s cubic-bezier(0.17, 0.67, 0.83, 1) forwards;
+            color: #000 !important; /* Принудительно черный */
+        }
+        .dogma-btn:hover { background: #ffe09d; }
+        .dogma-btn:active { transform: translate(2px, 2px) scale(1); box-shadow: 2px 2px 0 #000; }
+
+        .modal-box .dogma-btn {
+            background: #000;
+            color: #fff !important;
+            border-color: #000;
+            box-shadow: 4px 4px 0 #ffc240;
+            transform: scale(1);
+            animation: none;
+            width: 100%;
+        }
+        .modal-box .dogma-btn:hover { background: #333; }
+
+        .icon-btn { padding: 0; width: 54px; height: 54px; flex-shrink: 0; animation-delay: 0.1s; }
+        .icon-btn img { width: 28px; height: auto; display: block; }
+        
+        .user-nick-btn { 
+            gap: 8px; font-size: 28px; height: 54px; 
+            box-sizing: border-box; animation-delay: 0.15s; 
+            max-width: 330px; overflow: hidden; justify-content: flex-start;
+            padding-left: 12px;
+        }
+        .user-nick-btn span {
+            display: block;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            mask-image: linear-gradient(to right, black 84%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 84%, transparent 100%);
+            transform: translateY(-3px);
+        }
+        .user-nick-btn img { height: 24px; width: auto; flex-shrink: 0; margin-left: -4px; }
+
+        /* WINNER ICON STYLES */
+        #global-leaderboard-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            z-index: 400;
+            background: none;
+            border: none;
+            padding: 0;
+            animation: winnerPulse 2s infinite ease-in-out;
+            transition: opacity 0.3s ease;
+        }
+        #global-leaderboard-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        @keyframes winnerPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); }
+            50% { transform: scale(1.15); filter: drop-shadow(0 0 15px rgba(255,255,255,0.5)); }
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .mobile-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffc240;
+            display: none;
+            z-index: 1300;
+            box-sizing: border-box;
+            padding: 16px;
+            overflow: auto;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-screen .modal-box {
+            width: min(92vw, 520px);
+            max-width: 520px;
+            margin: 0;
+            transform: none !important;
+            box-shadow: 6px 6px 0 #000;
+            padding: 18px;
+            box-sizing: border-box;
+        }
+        .mobile-screen .modal-close {
+            position: static;
+            align-self: flex-end;
+            margin: -8px -4px -4px 0;
+        }
+        .mobile-screen .score-header-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .mobile-screen .search-container {
+            width: 100%;
+            max-width: none;
+        }
+        #mobile-score-screen .modal-box {
+            max-height: 88vh;
+            overflow: auto;
+        }
+        #mobile-score-screen .score-table {
+            font-size: 18px;
+        }
+        .modal-box {
+            background: #ffc240;
+            border: 6px solid #000;
+            padding: 40px;
+            position: relative;
+            width: 90%; max-width: 400px;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 10px 10px 0 #000;
+            transform-origin: center center;
+            color: #000;
+        }
+
+        /* CUSTOM SCROLLBAR */
+        #scoreboard-box::-webkit-scrollbar { width: 12px; }
+        #scoreboard-box::-webkit-scrollbar-track { background: #E0A11D; border-left: 4px solid #000; }
+        #scoreboard-box::-webkit-scrollbar-thumb { background: #000; border: 2px solid #ffc240; }
+
+        .modal-box h2 { margin: 0 0 10px 0; font-size: 42px; text-align: center; line-height: 1; color: #000; }
+        .modal-box input {
+            padding: 12px; font-family: 'Pribambas'; font-size: 22px;
+            border: 4px solid #000; background: #fff; outline: none;
+            box-sizing: border-box; color: #000;
+        }
+        .modal-close {
+            position: absolute; top: 10px; right: 10px;
+            width: 35px; height: 35px; background: none;
+            border: none; font-size: 40px; font-family: 'Arial', sans-serif;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            z-index: 10; line-height: 1; color: #000 !important;
+        }
+
+        .score-header-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; gap: 20px;
+        }
+        .score-header-row h2 { margin: 0; text-align: left; }
+        .search-container {
+            position: relative; flex-grow: 1; max-width: 200px;
+        }
+        .search-container input {
+            width: 100%; padding: 8px 35px 8px 10px; font-size: 20px; height: 40px;
+        }
+        .search-container img {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            width: 20px; height: 20px; pointer-events: none;
+        }
+
+        #scoreboard-box { max-width: 600px; width: 95%; max-height: 80vh; overflow-y: auto; padding-top: 40px; }
+        .score-table { width: 100%; border-collapse: collapse; font-size: 22px; color: #000; }
+        .score-table thead { background: #000; color: #fff; }
+        .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
+        .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
+        .current-user-row { background: rgba(255,255,255,0.4); font-weight: bold; }
 
         @keyframes popInCenter { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
         @keyframes popInCig { 0% { transform: translate(97px, -173px) scale(0); } 70% { transform: translate(97px, -173px) scale(1.1); } 100% { transform: translate(97px, -173px) scale(1); } }
@@ -96,14 +293,14 @@
             z-index: 20; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; color: #000; line-height: 1; white-space: nowrap; 
         }
         
-        #menu-status-wrapper { font-size: 60px; margin-top: -7px; display: flex; align-items: center; gap: 15px; }
+        #menu-status-wrapper { font-size: 60px; margin-top: -7px; display: flex; align-items: center; gap: 15px; color: #000; }
         .menu-controls-text { position: absolute; top: 75px; color: #c28b1a; font-size: 22px; opacity: 0; transition: opacity 0.2s ease; z-index: 20; text-align: center; margin: 0; }
         .show-text { opacity: 0.9; }
 
         .ui-panel { position: absolute; top: 50px; width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; color: #000; pointer-events: none; z-index: 100; }
         .ui-section { display: flex; flex-direction: column; align-items: center; }
         .stat-label { font-size: 20px; margin-bottom: -5px; }
-        .stat-value { font-size: 44px; display: inline-block; transition: transform 0.2s ease; }
+        .stat-value { font-size: 44px; display: inline-block; transition: transform 0.2s ease; line-height: 1; }
         
         .killed-container { 
             display: flex; align-items: center; font-size: 52px; line-height: 1; margin-top: 9px; white-space: nowrap; transition: color 0.2s ease, transform 0.2s ease; 
@@ -120,12 +317,80 @@
         #hp-bar { width: 100%; height: 100%; background: #fff; transition: width 0.2s ease; }
         .km-unit { font-size: 24px; margin-left: 3px; }
 
-        @media (max-width: 768px) { .ui-panel { top: 70px; } .stat-value { font-size: 32px; } .killed-container { font-size: 32px; } }
+        @media (max-width: 768px) { 
+            .ui-panel {
+                top: 42px;
+                left: 0;
+                width: 100%;
+                box-sizing: border-box;
+                padding: 0 8px;
+                grid-template-columns: 1fr auto 1fr;
+                transform: none;
+            }
+            .ui-panel .stat-label { font-size: 16px; }
+            .ui-panel .ui-section:first-child .stat-value,
+            .ui-panel .ui-section:last-child .stat-value { font-size: 28px; }
+            .stat-value { font-size: 32px; } 
+            .killed-container { font-size: 32px; }
+            .ui-panel .ui-section:first-child { 
+                align-items: flex-start;
+                padding-left: 0 !important;
+            }
+            .ui-panel .ui-section:last-child { 
+                align-items: flex-end;
+                padding-right: 0 !important;
+            }
+            #hp-container { 
+                top: 14px;
+                width: 170px;
+                height: 9px;
+                border-width: 2px;
+            }
+            .auth-btn-group .dogma-btn { font-size: 22px; padding: 0 16px; height: 54px; border-width: 3px; }
+            .user-nick-btn { font-size: 22px; height: 54px; max-width: 250px; gap: 4px; padding: 0 10px 0 4px; }
+            .user-nick-btn span { transform: translateY(3px); }
+            .user-nick-btn img { height: 21px; margin-right: -1px; margin-left: -6px; }
+            .icon-btn { width: 54px; height: 54px; }
+            #global-leaderboard-btn { width: 70px; height: 70px; bottom: 20px; right: 20px; }
+            .modal-close { top: 5px; right: 5px; }
+            .score-header-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            #auth-top-layer { top: 10px; padding: 0 10px; }
+            .mobile-screen { padding: 12px; }
+            .mobile-screen .modal-box {
+                width: min(94vw, 460px);
+                padding: 14px;
+                border-width: 5px;
+                box-shadow: 5px 5px 0 #000;
+            }
+            .mobile-screen .modal-box h2 { font-size: 32px; }
+            #mobile-score-screen .score-table { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
     <div id="hp-container"><div id="hp-bar"></div></div>
+    
     <div id="menu-overlay">
+        <div id="auth-top-layer">
+            <div id="guest-group" class="auth-btn-group">
+                <button class="dogma-btn" onclick="openModal('reg-modal')">РЕГИСТРАЦИЯ</button>
+                <button class="dogma-btn" onclick="openModal('login-modal')">ВХОД</button>
+            </div>
+            <div id="user-group" class="auth-btn-group" style="display: none;">
+                <button class="dogma-btn icon-btn" onclick="logout()">
+                    <img src="img/logout.png" alt="Logout">
+                </button>
+                <button class="dogma-btn user-nick-btn" onclick="openScoreboard(true)">
+                    <img src="img/win.png" alt="Win">
+                    <span id="display-nickname">ГОСТЬ</span>
+                </button>
+            </div>
+        </div>
+
+        <button id="global-leaderboard-btn" onclick="openScoreboard(false)">
+            <img src="img/winner.png" alt="Leaderboard">
+        </button>
+
         <canvas id="stars-canvas"></canvas>
         <svg id="rays-container" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g id="rays-group" transform="translate(500, 500)"></g></svg>
         <div class="menu-vignette"></div>
@@ -142,6 +407,74 @@
                 <div id="menu-status-wrapper">УНИЧТОЖАЙ ПРИШЕЛЬЦЕВ!</div>
                 <p id="controls-text" class="menu-controls-text show-text">ПРОБЕЛ: ПРЫГАЙ | КОНТРЛ: СТРЕЛЯЙ</p>
             </div>
+        </div>
+    </div>
+
+    <div id="reg-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal('reg-modal')">×</button>
+            <h2>РЕГИСТРАЦИЯ</h2>
+            <input type="text" id="reg-name" placeholder="ВВЕДИТЕ ИМЯ">
+            <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ">
+            <button class="dogma-btn" onclick="handleAuth('reg')">ОКЕЙ</button>
+        </div>
+    </div>
+
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal('login-modal')">×</button>
+            <h2>ВХОД</h2>
+            <input type="text" id="login-name" placeholder="НИКНЕЙМ">
+            <input type="password" id="login-pass" placeholder="ВАШ ПАРОЛЬ">
+            <button class="dogma-btn" onclick="handleAuth('login')">ОКЕЙ</button>
+        </div>
+    </div>
+
+    <div id="score-modal" class="modal-overlay">
+        <div class="modal-box" id="scoreboard-box">
+            <button class="modal-close" onclick="closeModal('score-modal')">×</button>
+            <div class="score-header-row">
+                <h2>ТОП БОЙЦОВ</h2>
+                <div class="search-container">
+                    <input type="text" id="score-search" placeholder="ПОИСК..." oninput="filterScoreboard()">
+                    <img src="img/search.png" alt="Search">
+                </div>
+            </div>
+            <table class="score-table">
+                <thead>
+                    <tr><th>№</th><th>ИМЯ</th><th>УБИТО</th><th>КМ</th></tr>
+                </thead>
+                <tbody id="score-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="mobile-auth-screen" class="mobile-screen">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeMobileScreen('mobile-auth-screen')">×</button>
+            <h2 id="mobile-auth-title">РЕГИСТРАЦИЯ</h2>
+            <input type="text" id="mobile-auth-name" placeholder="НИКНЕЙМ">
+            <input type="password" id="mobile-auth-pass" placeholder="ПАРОЛЬ">
+            <button class="dogma-btn" onclick="submitMobileAuth()">ОКЕЙ</button>
+        </div>
+    </div>
+
+    <div id="mobile-score-screen" class="mobile-screen">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeMobileScreen('mobile-score-screen')">×</button>
+            <div class="score-header-row">
+                <h2>ТОП БОЙЦОВ</h2>
+                <div class="search-container">
+                    <input type="text" id="mobile-score-search" placeholder="ПОИСК..." oninput="filterScoreboard()">
+                    <img src="img/search.png" alt="Search">
+                </div>
+            </div>
+            <table class="score-table">
+                <thead>
+                    <tr><th>№</th><th>ИМЯ</th><th>УБИТО</th><th>КМ</th></tr>
+                </thead>
+                <tbody id="mobile-score-body"></tbody>
+            </table>
         </div>
     </div>
 
@@ -163,7 +496,371 @@
 
     <canvas id="gameCanvas"></canvas>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
+// --- AUTH LOGIC ---
+let currentUser = null;
+let currentUserUid = null;
+let isModalOpen = false;
+let globalScores = [];
+
+let firebaseEnabled = false;
+let fbAuth = null;
+let fbDb = null;
+let mobileAuthMode = 'reg';
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDxUdN8_EzS7c_bOjY1_kmJrHf4mF9e5qY",
+    authDomain: "dogmamangame.firebaseapp.com",
+    projectId: "dogmamangame",
+    storageBucket: "dogmamangame.firebasestorage.app",
+    messagingSenderId: "777475159406",
+    appId: "1:777475159406:web:19de35bcfb1195074d7d7f"
+};
+
+function isFirebaseConfigured() {
+    return Object.values(firebaseConfig).every((v) => typeof v === 'string' && !v.includes('YOUR_'));
+}
+
+function nicknameToEmail(name) {
+    const normalized = name.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    return `${normalized || 'player'}@dogma.local`;
+}
+
+function initFirebase() {
+    if (typeof firebase === 'undefined') return;
+    if (!isFirebaseConfigured()) return;
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        fbAuth = firebase.auth();
+        fbDb = firebase.firestore();
+        firebaseEnabled = true;
+    } catch (err) {
+        firebaseEnabled = false;
+    }
+}
+
+function applyAuthState(name, uid = null) {
+    currentUser = name || null;
+    currentUserUid = uid || null;
+    const guestGroup = document.getElementById('guest-group');
+    const userGroup = document.getElementById('user-group');
+    const nicknameEl = document.getElementById('display-nickname');
+
+    if (currentUser) {
+        nicknameEl.innerText = currentUser.toUpperCase();
+        guestGroup.style.display = 'none';
+        userGroup.style.display = 'flex';
+    } else {
+        nicknameEl.innerText = "ГОСТЬ";
+        guestGroup.style.display = 'flex';
+        userGroup.style.display = 'none';
+    }
+}
+
+function persistCurrentUser() {
+    try {
+        if (currentUser) localStorage.setItem('dogma_current_user', currentUser);
+        else localStorage.removeItem('dogma_current_user');
+    } catch (err) {}
+}
+
+async function performAuth(type, name, pass) {
+    if (!name || !pass) return false;
+
+    if (!firebaseEnabled) {
+        applyAuthState(name, null);
+        persistCurrentUser();
+        return true;
+    }
+
+    const email = nicknameToEmail(name);
+    try {
+        let cred;
+        if (type === 'reg') {
+            cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
+            await fbDb.collection('players').doc(cred.user.uid).set({
+                nickname: name,
+                nicknameUpper: name.toUpperCase(),
+                nicknameLower: name.toLowerCase(),
+                kills: 0,
+                distKm: 0,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            applyAuthState(name, cred.user.uid);
+        } else {
+            cred = await fbAuth.signInWithEmailAndPassword(email, pass);
+            const snap = await fbDb.collection('players').doc(cred.user.uid).get();
+            const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
+            applyAuthState(profileName, cred.user.uid);
+        }
+        persistCurrentUser();
+        return true;
+    } catch (err) {
+        const code = err && err.code ? err.code : '';
+
+        if (type === 'reg' && code === 'auth/email-already-in-use') {
+            try {
+                // Если ник уже существует, пытаемся войти с указанным паролем.
+                const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
+                const snap = await fbDb.collection('players').doc(cred.user.uid).get();
+                const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
+                applyAuthState(profileName, cred.user.uid);
+                persistCurrentUser();
+                alert('Этот ник уже зарегистрирован. Выполнен вход.');
+                return true;
+            } catch (loginErr) {
+                alert('Этот ник уже зарегистрирован. Нажмите "ВХОД" и введите верный пароль.');
+                return false;
+            }
+        }
+
+        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+            alert('Неверный пароль или никнейм.');
+            return false;
+        }
+
+        if (code === 'auth/too-many-requests') {
+            alert('Слишком много попыток. Попробуйте чуть позже.');
+            return false;
+        }
+
+        alert('Ошибка авторизации: ' + (err.message || 'проверьте данные'));
+        return false;
+    }
+}
+
+async function saveCurrentUserStats() {
+    if (!firebaseEnabled || !currentUserUid) return;
+    try {
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const snap = await docRef.get();
+        const prev = snap.exists ? snap.data() : {};
+        const nextKills = Math.max(prev.kills || 0, enemiesDefeated || 0);
+        const nextDist = Math.max(prev.distKm || 0, Number((distance / 1000).toFixed(1)));
+        await docRef.set({
+            nickname: currentUser,
+            nicknameUpper: (currentUser || 'ГОСТЬ').toUpperCase(),
+            nicknameLower: (currentUser || 'ГОСТЬ').toLowerCase(),
+            kills: nextKills,
+            distKm: nextDist,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (err) {}
+}
+
+async function loadCloudScores() {
+    if (!firebaseEnabled || !fbDb) return null;
+    try {
+        const snap = await fbDb.collection('players').orderBy('kills', 'desc').limit(500).get();
+        const items = [];
+        snap.forEach((doc) => {
+            const d = doc.data();
+            items.push({
+                name: (d.nickname || 'ИГРОК').toUpperCase(),
+                kills: Number(d.kills || 0),
+                dist: Number(d.distKm || 0).toFixed(1),
+                current: doc.id === currentUserUid
+            });
+        });
+        return items;
+    } catch (err) {
+        return null;
+    }
+}
+
+
+function openModal(id) {
+    if (isMobileDevice && (id === 'reg-modal' || id === 'login-modal')) {
+        openMobileAuth(id === 'reg-modal' ? 'reg' : 'login');
+        return;
+    }
+    document.getElementById(id).style.display = 'flex';
+    isModalOpen = true;
+    adjustMenuScale();
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    isModalOpen = false;
+}
+
+async function handleAuth(type) {
+    const input = type === 'reg' ? document.getElementById('reg-name') : document.getElementById('login-name');
+    const passInput = type === 'reg' ? document.getElementById('reg-pass') : document.getElementById('login-pass');
+    let name = input.value.trim();
+    const pass = passInput.value.trim();
+    if (!name || !pass) return;
+    const ok = await performAuth(type, name, pass);
+    if (!ok) return;
+    
+    closeModal(type === 'reg' ? 'reg-modal' : 'login-modal');
+}
+
+async function logout() {
+    if (firebaseEnabled && fbAuth) {
+        try { await fbAuth.signOut(); } catch (err) {}
+    }
+    applyAuthState(null);
+    persistCurrentUser();
+}
+
+async function openScoreboard(focusCurrentUser = false) {
+    document.getElementById('score-search').value = '';
+    const mobileSearch = document.getElementById('mobile-score-search');
+    if (mobileSearch) mobileSearch.value = '';
+
+    const cloudScores = await loadCloudScores();
+    if (cloudScores && cloudScores.length) {
+        globalScores = cloudScores;
+    } else {
+        globalScores = [
+        { name: "SLAYER", kills: 500, dist: 12.5 },
+        { name: "PIXELHERO", kills: 450, dist: 10.1 },
+        { name: "DOGMAFAN", kills: 300, dist: 8.4 },
+        { name: "VOIDRUNNER", kills: 292, dist: 8.1 },
+        { name: "NIGHTBYTE", kills: 281, dist: 7.9 },
+        { name: "SKYCRASH", kills: 274, dist: 7.6 },
+        { name: "BULLETRAIN", kills: 268, dist: 7.4 },
+        { name: "STARDRIFT", kills: 259, dist: 7.1 },
+        { name: "ASHFALL", kills: 251, dist: 6.9 },
+        { name: "DOGMALORD", kills: 246, dist: 6.8 },
+        { name: "RETROJET", kills: 239, dist: 6.5 },
+        { name: "FROSTCODE", kills: 233, dist: 6.3 },
+        { name: "MEGAPIX", kills: 228, dist: 6.1 },
+        { name: "IRONLEAF", kills: 221, dist: 5.9 },
+        { name: "RAYSTORM", kills: 215, dist: 5.7 },
+        { name: "GHOSTARC", kills: 208, dist: 5.6 },
+        { name: "QUICKNOVA", kills: 201, dist: 5.3 },
+        { name: "ZEROFALL", kills: 196, dist: 5.1 },
+        { name: "PIXELFOX", kills: 189, dist: 4.9 },
+        { name: "BLAZEMODE", kills: 183, dist: 4.7 },
+        { name: "ALIENHUNT", kills: 176, dist: 4.5 },
+        { name: "NEXTRUN", kills: 169, dist: 4.3 },
+        { name: "MONOTRON", kills: 162, dist: 4.1 },
+        { name: "RUSTYJET", kills: 155, dist: 3.9 },
+        { name: "ECHOWAVE", kills: 149, dist: 3.7 },
+        { name: "COBRAKID", kills: 142, dist: 3.5 },
+        { name: "FIREPUNCH", kills: 136, dist: 3.3 },
+        { name: "LOWPOLY", kills: 129, dist: 3.1 },
+        { name: "MIRAGE", kills: 122, dist: 2.9 },
+        { name: "RIFTDOG", kills: 116, dist: 2.7 },
+        { name: "MECHBEAT", kills: 109, dist: 2.5 },
+        { name: "SHADOW", kills: 101, dist: 2.2 },
+        { name: (currentUser || "ГОСТЬ").toUpperCase(), kills: enemiesDefeated, dist: (distance/1000).toFixed(1), current: true }
+        ].sort((a,b) => b.kills - a.kills);
+    }
+
+    if (currentUser && !globalScores.some((x) => x.current)) {
+        globalScores.push({
+            name: currentUser.toUpperCase(),
+            kills: enemiesDefeated,
+            dist: (distance / 1000).toFixed(1),
+            current: true
+        });
+        globalScores.sort((a,b) => b.kills - a.kills);
+    }
+
+    renderScoreTable(globalScores);
+    if (isMobileDevice) openMobileScoreboard();
+    else openModal('score-modal');
+
+    setTimeout(() => {
+        const desktopCurrent = document.querySelector('#score-body .current-user-row');
+        const mobileCurrent = document.querySelector('#mobile-score-body .current-user-row');
+        const desktopBox = document.getElementById('scoreboard-box');
+        const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
+
+        if (!focusCurrentUser) {
+            if (desktopBox) desktopBox.scrollTop = 0;
+            if (mobileBox) mobileBox.scrollTop = 0;
+            return;
+        }
+
+        if (isMobileDevice) {
+            if (mobileCurrent) mobileCurrent.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            else if (mobileBox) mobileBox.scrollTop = 0;
+        } else {
+            if (desktopCurrent) desktopCurrent.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            else if (desktopBox) desktopBox.scrollTop = 0;
+        }
+    }, 80);
+}
+
+function renderScoreTable(data) {
+    const body = document.getElementById('score-body');
+    const mobileBody = document.getElementById('mobile-score-body');
+    if (body) body.innerHTML = '';
+    if (mobileBody) mobileBody.innerHTML = '';
+
+    data.forEach((d) => {
+        const originalIndex = globalScores.findIndex(item => item.name === d.name && item.kills === d.kills) + 1;
+        const rowHtml = `<td>${originalIndex}</td><td>${d.name}</td><td>${d.kills}</td><td>${d.dist}</td>`;
+
+        if (body) {
+            const row = document.createElement('tr');
+            if (d.current) row.className = 'current-user-row';
+            row.innerHTML = rowHtml;
+            body.appendChild(row);
+        }
+        if (mobileBody) {
+            const mobileRow = document.createElement('tr');
+            if (d.current) mobileRow.className = 'current-user-row';
+            mobileRow.innerHTML = rowHtml;
+            mobileBody.appendChild(mobileRow);
+        }
+    });
+}
+
+function filterScoreboard() {
+    const mobileScreen = document.getElementById('mobile-score-screen');
+    const useMobileSearch = isMobileDevice && mobileScreen && mobileScreen.style.display === 'flex';
+    const searchInput = useMobileSearch ? document.getElementById('mobile-score-search') : document.getElementById('score-search');
+    const val = searchInput.value.toUpperCase();
+    const filtered = globalScores.filter(d => d.name.toUpperCase().startsWith(val));
+    renderScoreTable(filtered);
+}
+
+function openMobileAuth(mode) {
+    mobileAuthMode = mode;
+    const screen = document.getElementById('mobile-auth-screen');
+    const title = document.getElementById('mobile-auth-title');
+    const nameInput = document.getElementById('mobile-auth-name');
+    const passInput = document.getElementById('mobile-auth-pass');
+    title.innerText = mode === 'reg' ? 'РЕГИСТРАЦИЯ' : 'ВХОД';
+    nameInput.placeholder = 'НИКНЕЙМ';
+    passInput.placeholder = mode === 'reg' ? 'ПРИДУМАЙТЕ ПАРОЛЬ' : 'ВАШ ПАРОЛЬ';
+    nameInput.value = '';
+    passInput.value = '';
+    screen.style.display = 'flex';
+    isModalOpen = true;
+    setTimeout(() => nameInput.focus(), 30);
+}
+
+async function submitMobileAuth() {
+    const name = document.getElementById('mobile-auth-name').value.trim();
+    const pass = document.getElementById('mobile-auth-pass').value.trim();
+    if (!name || !pass) return;
+    const ok = await performAuth(mobileAuthMode, name, pass);
+    if (!ok) return;
+    closeMobileScreen('mobile-auth-screen');
+}
+
+function openMobileScoreboard() {
+    const screen = document.getElementById('mobile-score-screen');
+    screen.style.display = 'flex';
+    isModalOpen = true;
+}
+
+function closeMobileScreen(id) {
+    const screen = document.getElementById(id);
+    if (screen) screen.style.display = 'none';
+    isModalOpen = false;
+}
+
+// --- GAME CODE ---
 function adjustMenuScale() {
     const comp = document.getElementById('menu-comp');
     if(!comp) return;
@@ -171,6 +868,19 @@ function adjustMenuScale() {
     const screenW = window.innerWidth * 0.95; const screenH = window.innerHeight * 0.95;
     const scale = Math.min(screenW / baseW, screenH / baseH);
     comp.style.transform = `scale(${scale})`;
+
+    const modals = document.querySelectorAll('.modal-box');
+    modals.forEach(m => {
+        const modalScale = isMobileDevice ? 1 : scale;
+        m.style.transform = `scale(${modalScale})`;
+    });
+
+    const topAuth = document.getElementById('auth-top-layer');
+    if(topAuth) {
+        // Уменьшаем масштаб на мобилках чуть сильнее, чтобы не вылезало
+        const authScale = window.innerWidth < 600 ? Math.min(scale * 0.9, 0.8) : Math.max(scale, 0.7);
+        topAuth.style.transform = `scale(${authScale})`;
+    }
 }
 window.addEventListener('resize', adjustMenuScale);
 window.addEventListener('DOMContentLoaded', adjustMenuScale);
@@ -187,81 +897,85 @@ async function initFonts() {
 initFonts();
 
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let lastTouchEnd = 0;
+
 window.addEventListener('DOMContentLoaded', () => {
+    initFirebase();
+
+    try {
+        const savedUser = localStorage.getItem('dogma_current_user');
+        if (savedUser) applyAuthState(savedUser);
+        else applyAuthState(null);
+    } catch (err) {}
+
+    if (firebaseEnabled && fbAuth) {
+        fbAuth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                applyAuthState(null, null);
+                persistCurrentUser();
+                return;
+            }
+            currentUserUid = user.uid;
+            try {
+                const snap = await fbDb.collection('players').doc(user.uid).get();
+                const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : (currentUser || 'ГОСТЬ');
+                applyAuthState(profileName, user.uid);
+                persistCurrentUser();
+            } catch (err) {
+                applyAuthState(currentUser || 'ГОСТЬ', user.uid);
+                persistCurrentUser();
+            }
+        });
+    }
+
     const ctrlText = document.getElementById('controls-text');
     if (isMobileDevice) ctrlText.innerText = "ТАП СЛЕВА: ПРЫГАЙ | ТАП СПРАВА: СТРЕЛЯЙ";
-});
 
-const sounds = {
-    bg: new Audio('sound/start_sound.mp3'),
-    m1: new Audio('sound/main_sound.mp3'),
-    m2: new Audio('sound/main2_sound.mp3'),
-    m3: new Audio('sound/main3_sound.mp3'),
-    jump: new Audio('sound/jump.wav'),
-    land: new Audio('sound/land.wav'),
-    shoot: new Audio('sound/shoot.wav'),
-    death_enemy: new Audio('sound/death_enemy.wav'),
-    life: new Audio('sound/life.wav'),
-    shield: new Audio('sound/shield.wav'),
-    ammo: new Audio('sound/ammo.wav'),
-    super: new Audio('sound/super.wav'),
-    boost: new Audio('sound/boost.wav'),
-    cool: new Audio('sound/cool.wav'),
-    death: new Audio('sound/death.wav'),
-    woosh: new Audio('sound/woosh.wav'), 
-    power: new Audio('sound/power.wav'),
-    ice: new Audio('sound/ice.wav'),
-    shh: new Audio('sound/shh.wav')   
-};
+    // Закрытие модалок/мобильных экранов по клику вне окна.
+    ['reg-modal', 'login-modal', 'score-modal'].forEach((id) => {
+        const overlay = document.getElementById(id);
+        if (!overlay) return;
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeModal(id);
+        });
+    });
 
-// Принудительное отключение звука на мобильных устройствах
-if (isMobileDevice) {
-    for (let key in sounds) {
-        sounds[key].muted = true;
-        sounds[key].volume = 0;
-        // Переопределяем метод play, чтобы он ничего не делал
-        sounds[key].play = function() { return Promise.resolve(); };
-    }
-}
-
-// Плейлист
-let mainPlaylist = [sounds.m1, sounds.m2, sounds.m3];
-let currentTrackIdx = Math.floor(Math.random() * mainPlaylist.length);
-let currentTrack = mainPlaylist[currentTrackIdx];
-
-// Настройка переключения треков и громкости
-mainPlaylist.forEach((track, index) => {
-    if (!isMobileDevice) track.volume = 0.3;
-    track.addEventListener('ended', () => {
-        currentTrackIdx = (currentTrackIdx + 1) % mainPlaylist.length;
-        currentTrack = mainPlaylist[currentTrackIdx];
-        currentTrack.currentTime = 0;
-        currentTrack.play();
+    ['mobile-auth-screen', 'mobile-score-screen'].forEach((id) => {
+        const screen = document.getElementById(id);
+        if (!screen) return;
+        screen.addEventListener('click', (e) => {
+            if (e.target === screen) closeMobileScreen(id);
+        });
     });
 });
 
-if (!isMobileDevice) {
-    sounds.bg.loop = true; sounds.bg.volume = 0.6;
-    sounds.jump.volume = 0.5;
-    sounds.land.volume = 0.9;
-    sounds.shoot.volume = 0.6;
-    sounds.death_enemy.volume = 0.8;
-    sounds.life.volume = 0.6;
-    sounds.shield.volume = 0.6;
-    sounds.ammo.volume = 0.9;
-    sounds.super.volume = 0.6;
-    sounds.boost.volume = 0.6;
-    sounds.cool.volume = 1;
-    sounds.death.volume = 0.6;
-    sounds.woosh.loop = true; sounds.woosh.volume = 0.4; 
-    sounds.power.loop = true; sounds.power.volume = 0.4;
-    sounds.ice.volume = 0.8;
-    sounds.shh.volume = 0.9;
-}
+// Блокируем double-tap zoom на мобильных, не трогая масштаб всей страницы.
+document.addEventListener('touchend', (e) => {
+    if (!isMobileDevice) return;
+    if (e.touches.length > 0) return;
+    const now = Date.now();
+    if (now - lastTouchEnd <= 320) e.preventDefault();
+    lastTouchEnd = now;
+}, { passive: false });
 
-// Звуки "shh" полностью отключены для всех устройств по заданию
-function playShh() { /* Звук отключен */ }
-function showMenuSounds() { /* Звуки появления объектов отключены */ }
+// Sound and Image loading
+const sounds = {
+    bg: new Audio('sound/start_sound.mp3'), m1: new Audio('sound/main_sound.mp3'), m2: new Audio('sound/main2_sound.mp3'), m3: new Audio('sound/main3_sound.mp3'),
+    jump: new Audio('sound/jump.wav'), land: new Audio('sound/land.wav'), shoot: new Audio('sound/shoot.wav'), death_enemy: new Audio('sound/death_enemy.wav'),
+    life: new Audio('sound/life.wav'), shield: new Audio('sound/shield.wav'), ammo: new Audio('sound/ammo.wav'), super: new Audio('sound/super.wav'),
+    boost: new Audio('sound/boost.wav'), cool: new Audio('sound/cool.wav'), death: new Audio('sound/death.wav'), woosh: new Audio('sound/woosh.wav'), 
+    power: new Audio('sound/power.wav'), ice: new Audio('sound/ice.wav'), shh: new Audio('sound/shh.wav')   
+};
+
+if (isMobileDevice) { for (let key in sounds) { sounds[key].muted = true; sounds[key].volume = 0; sounds[key].play = function() { return Promise.resolve(); }; } }
+
+let mainPlaylist = [sounds.m1, sounds.m2, sounds.m3], currentTrackIdx = Math.floor(Math.random() * mainPlaylist.length), currentTrack = mainPlaylist[currentTrackIdx];
+mainPlaylist.forEach((track) => {
+    if (!isMobileDevice) track.volume = 0.3;
+    track.addEventListener('ended', () => { currentTrackIdx = (currentTrackIdx + 1) % mainPlaylist.length; currentTrack = mainPlaylist[currentTrackIdx]; currentTrack.currentTime = 0; currentTrack.play(); });
+});
+
+if (!isMobileDevice) { sounds.bg.loop = true; sounds.bg.volume = 0.6; sounds.jump.volume = 0.5; sounds.land.volume = 0.9; sounds.shoot.volume = 0.6; sounds.death_enemy.volume = 0.8; sounds.life.volume = 0.6; sounds.shield.volume = 0.6; sounds.ammo.volume = 0.9; sounds.super.volume = 0.6; sounds.boost.volume = 0.6; sounds.cool.volume = 1; sounds.death.volume = 0.6; sounds.woosh.loop = true; sounds.woosh.volume = 0.4; sounds.power.loop = true; sounds.power.volume = 0.4; sounds.ice.volume = 0.8; sounds.shh.volume = 0.9; }
 
 const loadImg = (n) => { const i = new Image(); i.src = 'img/' + n; return i; };
 const heroRun = ['run1.png','run2.png','run3.png','run4.png','run5.png','run6.png'].map(loadImg);
@@ -283,32 +997,45 @@ function preloadEnemies() {
 }
 preloadEnemies();
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const starsCanvas = document.getElementById('stars-canvas');
-const sCtx = starsCanvas.getContext('2d');
-const menuOverlay = document.getElementById('menu-overlay');
-const topInfoText = document.getElementById('top-info-text');
-const menuStatusWrapper = document.getElementById('menu-status-wrapper');
-const controlsText = document.getElementById('controls-text');
-const hpBar = document.getElementById('hp-bar');
-const ammoCountEl = document.getElementById('ammo-count');
-const enemiesEl = document.getElementById('enemies');
-const distValEl = document.getElementById('distVal');
-const killedWrapper = document.getElementById('killed-wrapper');
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), starsCanvas = document.getElementById('stars-canvas'), sCtx = starsCanvas.getContext('2d');
+const menuOverlay = document.getElementById('menu-overlay'), topInfoText = document.getElementById('top-info-text'), menuStatusWrapper = document.getElementById('menu-status-wrapper');
+const controlsText = document.getElementById('controls-text'), hpBar = document.getElementById('hp-bar'), ammoCountEl = document.getElementById('ammo-count'), enemiesEl = document.getElementById('enemies'), distValEl = document.getElementById('distVal'), killedWrapper = document.getElementById('killed-wrapper');
+const leaderboardBtn = document.getElementById('global-leaderboard-btn');
 
-let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true;
-let distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastIceDist = 0;
-let zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0;
-let invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false;
-let cheatLife = false, cheatBuffer = "";
+let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastIceDist = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let isLeaderboardPulseSynced = false;
+const MOBILE_WORLD_BASE_WIDTH = 980;
 
 const MAIN_YELLOW = '#ffc240', DARK_YELLOW = '#E0A11D', SHADOW_YELLOW = '#c28b1a', PIT_COLOR = '#c28b1a', BLACK = '#000000', WHITE = '#ffffff', CITY_BROWN = '#AF7C22';
 
 const gameStars = [];
 for(let i=0; i<180; i++) { gameStars.push({ x: Math.random(), y: Math.random(), size: Math.random() * 3 + 2, opacity: Math.random(), blinkSpeed: 0.01 + Math.random() * 0.03, isBlinking: Math.random() < 0.3 }); }
 
-function resize() { canvas.width = starsCanvas.width = window.innerWidth; canvas.height = starsCanvas.height = window.innerHeight; adjustMenuScale(); }
+function resize() {
+    const worldScale = isMobileDevice ? (MOBILE_WORLD_BASE_WIDTH / Math.max(window.innerWidth, 1)) : 1;
+    const worldW = Math.round(window.innerWidth * worldScale);
+    const worldH = Math.round(window.innerHeight * worldScale);
+
+    canvas.width = starsCanvas.width = worldW;
+    canvas.height = starsCanvas.height = worldH;
+
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    starsCanvas.style.width = '100vw';
+    starsCanvas.style.height = '100vh';
+
+    adjustMenuScale();
+}
+
+function restartLeaderboardPulse() {
+    if (!leaderboardBtn) return;
+    leaderboardBtn.style.animation = 'none';
+    void leaderboardBtn.offsetWidth;
+    requestAnimationFrame(() => {
+        leaderboardBtn.style.animation = 'winnerPulse 2s infinite ease-in-out';
+        leaderboardBtn.style.animationPlayState = 'running';
+    });
+}
 window.addEventListener('resize', resize); resize();
 const getGroundY = () => (canvas.height * 0.75) | 0;
 
@@ -320,8 +1047,7 @@ function updateStars() {
         const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2; sCtx.fillStyle = "rgba(255, 245, 180, 0.9)"; 
         for (let s of stars) { 
             s.z += 6; if (s.z >= starsCanvas.width) { s.z = 1; s.x = Math.random() * starsCanvas.width - cx; s.y = Math.random() * starsCanvas.height - cy; } 
-            const px = cx + (s.x / s.z) * starsCanvas.width; const py = cy + (s.y / s.z) * starsCanvas.height;
-            const progress = (1 - s.z / starsCanvas.width); const size = Math.max(0.1, progress * 14); 
+            const px = cx + (s.x / s.z) * starsCanvas.width, py = cy + (s.y / s.z) * starsCanvas.height, progress = (1 - s.z / starsCanvas.width), size = Math.max(0.1, progress * 14); 
             if (px > 0 && px < starsCanvas.width && py > 0 && py < starsCanvas.height) {
                 sCtx.beginPath(); sCtx.moveTo(px, py - size * 1.8); sCtx.lineTo(px + size * 0.6, py - size * 0.6); sCtx.lineTo(px + size * 1.8, py); sCtx.lineTo(px + size * 0.6, py + size * 0.6); sCtx.lineTo(px, py + size * 1.8); sCtx.lineTo(px - size * 0.6, py + size * 0.6); sCtx.lineTo(px - size * 1.8, py); sCtx.lineTo(px - size * 0.6, py - size * 0.6); sCtx.closePath(); sCtx.fill(); 
             }
@@ -330,15 +1056,14 @@ function updateStars() {
 } 
 updateStars();
 
-const raysGroup = document.getElementById('rays-group'); for (let i = 0; i < 30; i++) { const angle = (i * 360 / 30) + (Math.random() * 10); const radCenter = angle * Math.PI / 180, radLeft = (angle - 1) * Math.PI / 180, radRight = (angle + 1) * Math.PI / 180; const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); polygon.setAttribute("points", `${Math.cos(radCenter)*250},${Math.sin(radCenter)*250} ${Math.cos(radLeft)*1200},${Math.sin(radLeft)*1200} ${Math.cos(radRight)*1200},${Math.sin(radRight)*1200}`); polygon.setAttribute("fill", DARK_YELLOW); raysGroup.appendChild(polygon); }
+const raysGroup = document.getElementById('rays-group'); for (let i = 0; i < 30; i++) { const angle = (i * 360 / 30) + (Math.random() * 10), radCenter = angle * Math.PI / 180, radLeft = (angle - 1) * Math.PI / 180, radRight = (angle + 1) * Math.PI / 180, polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); polygon.setAttribute("points", `${Math.cos(radCenter)*250},${Math.sin(radCenter)*250} ${Math.cos(radLeft)*1200},${Math.sin(radLeft)*1200} ${Math.cos(radRight)*1200},${Math.sin(radRight)*1200}`); polygon.setAttribute("fill", DARK_YELLOW); raysGroup.appendChild(polygon); }
 
 function createMountains(count, color, minH, maxH) { let mts = []; let startX = 0; for (let i = 0; i < count; i++) { let segment = [{ x: 0, y: 0 }]; for (let j = 1; j <= 14; j++) segment.push({ x: (j/14) * canvas.width, y: -(Math.sin((j/14) * Math.PI) * (Math.random() * (maxH - minH) + minH)) }); segment.push({ x: canvas.width, y: 0 }); mts.push({ points: segment, color, xOffset: startX }); startX += canvas.width; } return mts; }
 let backMountains = createMountains(5, DARK_YELLOW, 120, 280), frontMountains = createMountains(4, SHADOW_YELLOW, 70, 190);
 
-function createCityline(images, spacingMin, spacingMax, scale) { let line = []; let currentX = 0; let lastIdx = -1; for (let i = 0; i < 40; i++) { let idx; do { idx = Math.floor(Math.random() * images.length); } while (idx === lastIdx); lastIdx = idx; let s = scale * (0.9 + Math.random() * 0.2); let img = images[idx]; let w = (img.width || 200) * s; line.push({ img: img, x: currentX, scale: s, w: w }); currentX += w + spacingMin + Math.random() * (spacingMax - spacingMin); } return { objects: line, totalWidth: currentX }; }
-function createClouds(images, count, spacingMin, spacingMax) { let line = []; let currentX = 0; for (let i = 0; i < count; i++) { let idx = Math.floor(Math.random() * images.length); let s = 0.35 + Math.random() * 0.35; let op = 0.05 + Math.random() * 0.15; let offY = -350 - Math.random() * 750; line.push({ img: images[idx], x: currentX, scale: s, opacity: op, offY: offY }); currentX += spacingMin + Math.random() * (spacingMax - spacingMin); } return { objects: line, totalWidth: currentX }; }
-let city1Data = createCityline(cityline1Images, 700, 1500, 0.9), city2Data = createCityline(cityline2Images, 200, 500, 0.7);
-let cloudsData = createClouds(cloudsImages, 40, 600, 1400); 
+function createCityline(images, spacingMin, spacingMax, scale) { let line = []; let currentX = 0; let lastIdx = -1; for (let i = 0; i < 40; i++) { let idx; do { idx = Math.floor(Math.random() * images.length); } while (idx === lastIdx); lastIdx = idx; let s = scale * (0.9 + Math.random() * 0.2), img = images[idx], w = (img.width || 200) * s; line.push({ img: img, x: currentX, scale: s, w: w }); currentX += w + spacingMin + Math.random() * (spacingMax - spacingMin); } return { objects: line, totalWidth: currentX }; }
+function createClouds(images, count, spacingMin, spacingMax) { let line = []; let currentX = 0; for (let i = 0; i < count; i++) { let idx = Math.floor(Math.random() * images.length), s = 0.35 + Math.random() * 0.35, op = 0.05 + Math.random() * 0.15, offY = -350 - Math.random() * 750; line.push({ img: images[idx], x: currentX, scale: s, opacity: op, offY: offY }); currentX += spacingMin + Math.random() * (spacingMax - spacingMin); } return { objects: line, totalWidth: currentX }; }
+let city1Data = createCityline(cityline1Images, 700, 1500, 0.9), city2Data = createCityline(cityline2Images, 200, 500, 0.7), cloudsData = createClouds(cloudsImages, 40, 600, 1400); 
 function createStaticObjects(images, spacingMin, spacingMax) { let line = []; let currentX = 1500; for (let i = 0; i < images.length; i++) { line.push({ img: images[i], x: currentX }); currentX += spacingMin + Math.random() * (spacingMax - spacingMin); } return { objects: line, totalWidth: currentX }; }
 let mtnObjData = createStaticObjects(mountainObjectsImages, 3000, 5500);
 
@@ -346,9 +1071,8 @@ const hero = {
     w: 110, h: 158, x: 0, y: 0, dy: 0, angle: 0, grounded: false, jumpCount: 0, suspension: 0, fallingInPit: false,
     init() { this.x = (canvas.width / 8) | 0; this.y = -200; this.dy = 0; this.angle = 0; this.jumpCount = 0; this.grounded = false; this.fallingInPit = false; this.suspension = 0; airKills = 0; },
     jump() { 
-        if (!this.fallingInPit && !isFirstRun) { 
-            const isBoost = boostTimer > 0; 
-            const maxJumps = isBoost ? 15 : 2; 
+        if (!this.fallingInPit && !isFirstRun && !isModalOpen) { 
+            const isBoost = boostTimer > 0, maxJumps = isBoost ? 15 : 2; 
             if (this.jumpCount < maxJumps && (this.grounded || this.jumpCount > 0 || isBoost)) { 
                 sounds.jump.currentTime = 0; sounds.jump.play(); 
                 let boostPower = isBoost ? (this.y < -1000 ? -12 : -19) : -19; 
@@ -362,283 +1086,185 @@ const hero = {
         this.dy += 0.8 * ts; this.y += this.dy * ts; this.suspension *= (1 - 0.15 * ts);
         if (boostTimer > 0 && this.y < -2000) { this.y = -2000; this.dy = 0; }
         if (invulFrames > 0) invulFrames -= ts;
-        
         if (boostTimer > 0) { 
             if (sounds.woosh.paused) sounds.woosh.play();
             boostTimer -= ts; 
             if (frame % 2 === 0) createParticleTail(this.x + 45, this.y + 75 + (Math.random()-0.5)*40); 
-            if (boostTimer <= 0) {
-                boostExitSafety = 120; 
-                sounds.woosh.pause();
-                sounds.woosh.currentTime = 0;
-            }
+            if (boostTimer <= 0) { boostExitSafety = 120; sounds.woosh.pause(); sounds.woosh.currentTime = 0; }
         }
-        
         if (boostExitSafety > 0) boostExitSafety -= ts;
-        
-        if (superShotTimer > 0) { 
-            superShotTimer -= ts; 
-            if (frame % 5 === 0) {
-                fireBullet(true); 
-            }
-        }
-        
-        if (shieldTimer > 0) {
-            if (sounds.power.paused) sounds.power.play();
-            shieldTimer -= ts;
-            if (shieldTimer <= 0) {
-                sounds.power.pause();
-                sounds.power.currentTime = 0;
-            }
-        }
-        
+        if (superShotTimer > 0) { superShotTimer -= ts; if (frame % 5 === 0) fireBullet(true); }
+        if (shieldTimer > 0) { if (sounds.power.paused) sounds.power.play(); shieldTimer -= ts; if (shieldTimer <= 0) { sounds.power.pause(); sounds.power.currentTime = 0; } }
         if (isFiring && !isGameOver && !isFirstRun && (ammo > 0) && superShotTimer <= 0) { let now = Date.now(); if (now - lastShotTime > 110) { fireBullet(); lastShotTime = now; } }
-        
         const gy = getGroundY(); let onSolid = false, targetAngle = 0;
         if (this.fallingInPit) { this.angle += 0.12 * ts; if (hp > 0) { hp = Math.max(0, hp - 5 * ts); updateHPBar(); } if (this.y + this.h/2 >= gy + 60) { if (!isGameOver) { createExplosion(this.x + this.w/2, gy + 100, 40, WHITE); triggerGameOver(); } } return; }
-        
         obstacles.forEach(o => { 
             if (o.hit) return; 
             if (o.type === 'ramp' && this.x + this.w - 20 > o.x && this.x + 20 < o.x + o.w) { 
-                let relX = Math.max(0, Math.min(o.w, this.x + this.w - 60 - o.x)); 
-                let rampTop = gy - (relX / o.w) * o.h; 
-                if (this.y + this.h >= rampTop - 10 && this.dy >= 0) { 
-                    this.y = rampTop - this.h + 2; this.dy = 0; this.grounded = true; this.jumpCount = 0; onSolid = true; targetAngle = -Math.atan(o.h / o.w); 
-                    if (relX >= o.w - 15) { this.dy = -25 - (o.h / 12); this.grounded = false; this.jumpCount = 1; shakeTime = 8; } 
-                } 
+                let relX = Math.max(0, Math.min(o.w, this.x + this.w - 60 - o.x)), rampTop = gy - (relX / o.w) * o.h; 
+                if (this.y + this.h >= rampTop - 10 && this.dy >= 0) { this.y = rampTop - this.h + 2; this.dy = 0; this.grounded = true; this.jumpCount = 0; onSolid = true; targetAngle = -Math.atan(o.h / o.w); if (relX >= o.w - 15) { this.dy = -25 - (o.h / 12); this.grounded = false; this.jumpCount = 1; shakeTime = 8; } } 
             } 
-            if (boostTimer <= 0 && shieldTimer <= 0 && gameSpeed < baseSpeed + 2 && o.type === 'pit') { 
-                const heroCenter = this.x + this.w / 2; const safeMargin = 40; 
-                if (heroCenter > (o.x + safeMargin) && heroCenter < (o.x + o.w - safeMargin) && this.y + this.h >= gy - 5) { this.fallingInPit = true; this.grounded = false; } 
-            } 
+            if (boostTimer <= 0 && shieldTimer <= 0 && gameSpeed < baseSpeed + 2 && o.type === 'pit') { const heroCenter = this.x + this.w / 2, safeMargin = 40; if (heroCenter > (o.x + safeMargin) && heroCenter < (o.x + o.w - safeMargin) && this.y + this.h >= gy - 5) { this.fallingInPit = true; this.grounded = false; } } 
         });
-        
-        if (!onSolid && !this.fallingInPit && this.y + this.h >= gy) { 
-            if (!this.grounded) { 
-                this.suspension = -8; 
-                if(boostTimer <= 0 && shieldTimer <= 0 && gameSpeed < baseSpeed + 2) shakeTime = distance < 5 ? 25 : 10;
-                sounds.land.currentTime = 0; sounds.land.play(); 
-            } 
-            this.y = gy - this.h; this.dy = 0; this.grounded = true; this.jumpCount = 0; targetAngle = 0; airKills = 0;
-        } else if (!onSolid && this.y + this.h < gy) { this.grounded = false; targetAngle = 0; }
+        if (!onSolid && !this.fallingInPit && this.y + this.h >= gy) { if (!this.grounded) { this.suspension = -8; if(boostTimer <= 0 && shieldTimer <= 0 && gameSpeed < baseSpeed + 2) shakeTime = distance < 5 ? 25 : 10; sounds.land.currentTime = 0; sounds.land.play(); } this.y = gy - this.h; this.dy = 0; this.grounded = true; this.jumpCount = 0; targetAngle = 0; airKills = 0; } else if (!onSolid && this.y + this.h < gy) { this.grounded = false; targetAngle = 0; }
         this.angle += (targetAngle - this.angle) * 0.2 * ts;
     },
     draw(cameraY) { 
         if (isGameOver && hp <= 0) return; 
         const isRecovering = gameSpeed > baseSpeed + 2;
         if ((invulFrames > 0 || isRecovering) && shieldTimer <= 0 && boostTimer <= 0 && Math.floor(frame / 4) % 2 === 0) return; 
-        let img; const animIdx = Math.floor(frame / 6) % 6; const isActuallyFiring = isFiring || (superShotTimer > 0); 
+        let img; const animIdx = Math.floor(frame / 6) % 6, isActuallyFiring = isFiring || (superShotTimer > 0); 
         if (boostTimer > 0) img = isActuallyFiring ? heroBoostShoot : heroBoost; else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand); else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx]; 
         ctx.save(); ctx.translate(this.x + this.w/2, this.y + this.h/2 + cameraY); ctx.rotate(this.angle); if (shieldTimer > 0) { for (let i = 0; i < 3; i++) { let szM = ((frame + i * 20) % 60) / 60; ctx.beginPath(); ctx.arc(0, 0, 40 + szM * 80, 0, Math.PI * 2); ctx.strokeStyle = i===0?`rgba(240,134,20,${1-szM})`:i===1?`rgba(255,255,255,${1-szM})`:`rgba(240,154,20,${1-szM})`; ctx.lineWidth = 4; ctx.stroke(); } } 
         ctx.drawImage(img, -this.w/2, -this.h/2 - this.suspension + 2, this.w, this.h); ctx.restore(); 
     }
 };
 
-function triggerBonusPulse(el) { 
-    if(!el) return;
-    el.classList.remove('pulse-bonus');
-    void el.offsetWidth; 
-    el.classList.add('pulse-bonus'); 
-}
-
-function updateAmmo(newVal) { 
-    const isIncrease = newVal > ammo;
-    ammo = Math.max(0, newVal); 
-    ammoCountEl.innerText = ammo; 
-    if (isIncrease) triggerBonusPulse(ammoCountEl);
-}
-
-function fireBullet(isSuper = false) { 
-    if (!isSuper) updateAmmo(ammo - 1); 
-    sounds.shoot.currentTime = 0; sounds.shoot.play(); 
-    bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 }); 
-}
-
-function addEnemyKill() { 
-    enemiesDefeated++; 
-    sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); 
-    if (!hero.grounded) {
-        airKills++;
-        if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); sounds.ammo.currentTime = 0; sounds.ammo.play(); }
-    }
-    enemiesEl.innerText = enemiesDefeated; 
-    if (enemiesDefeated > 0 && enemiesDefeated % 10 === 0) {
-        triggerBonusPulse(killedWrapper);
-        updateAmmo(ammo + 5);
-        sounds.cool.currentTime = 0; sounds.cool.play();
-    }
-}
-
+function triggerBonusPulse(el) { if(!el) return; el.classList.remove('pulse-bonus'); void el.offsetWidth; el.classList.add('pulse-bonus'); }
+function updateAmmo(newVal) { const isIncrease = newVal > ammo; ammo = Math.max(0, newVal); ammoCountEl.innerText = ammo; if (isIncrease) triggerBonusPulse(ammoCountEl); }
+function fireBullet(isSuper = false) { if (!isSuper) updateAmmo(ammo - 1); sounds.shoot.currentTime = 0; sounds.shoot.play(); bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 }); }
+function addEnemyKill() { enemiesDefeated++; sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); if (!hero.grounded) { airKills++; if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); sounds.ammo.currentTime = 0; sounds.ammo.play(); } } enemiesEl.innerText = enemiesDefeated; if (enemiesDefeated > 0 && enemiesDefeated % 10 === 0) { triggerBonusPulse(killedWrapper); updateAmmo(ammo + 5); sounds.cool.currentTime = 0; sounds.cool.play(); } }
 function takeDamage(amount) { if (invulFrames > 0 || boostTimer > 0 || shieldTimer > 0 || isGameOver || gameSpeed > baseSpeed + 2) return; if (!cheatLife) { hp = Math.max(0, hp - amount); updateHPBar(); } invulFrames = 60; shakeTime = 20; if (hp <= 0) { createExplosion(hero.x + hero.w/2, hero.y + hero.h/2, 50, WHITE); triggerGameOver(); } }
 function updateHPBar() { hpBar.style.width = hp + '%'; }
-
-function createExplosion(x, y, count = 20, color = WHITE, type = 'square') { 
-    let isSunRay = type === 'sun_rays'; 
-    let scatter = isSunRay ? 12 : 25; 
-    for(let i=0; i<count; i++) { 
-        if (particles.length > 300) break;
-        let angle = isSunRay ? (i / count) * Math.PI * 2 : 0; 
-        let speed = isSunRay ? 3 + Math.random() * 4 : 0; 
-        particles.push({ x, y, vx: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter, vy: isSunRay ? Math.sin(angle) * speed : (Math.random()-0.5) * scatter, life: isSunRay ? 0.6 : 1.0, s: isSunRay ? 0 : Math.random()*5+2, angle: angle, color: color, type: type }); 
-    } 
-}
-
-function createParticleTail(x, y) { 
-    if (particles.length > 400) return;
-    const r = Math.random(); 
-    let c = r<0.2?'#8A2BE2':r<0.4?'#DDA0DD':WHITE; 
-    particles.push({ x, y, vx: -Math.random()*15-5, vy: (Math.random()-0.5)*6, life: 1, s: Math.random()*7+3, color: c, type: 'star' }); 
-    if (Math.random() < 0.2) {
-        particles.push({ x: x + 20, y: y + (Math.random()-0.5)*60, vx: -Math.random()*8-2, vy: (Math.random()-0.5)*4, life: 0.8, s: Math.random()*3+1, color: WHITE, type: 'star' });
-    }
-}
+function createExplosion(x, y, count = 20, color = WHITE, type = 'square') { let isSunRay = type === 'sun_rays', scatter = isSunRay ? 12 : 25; for(let i=0; i<count; i++) { if (particles.length > 300) break; let angle = isSunRay ? (i / count) * Math.PI * 2 : 0, speed = isSunRay ? 3 + Math.random() * 4 : 0; particles.push({ x, y, vx: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter, vy: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter, life: isSunRay ? 0.6 : 1.0, s: isSunRay ? 0 : Math.random()*5+2, angle: angle, color: color, type: type }); } }
+function createParticleTail(x, y) { if (particles.length > 400) return; const r = Math.random(); let c = r<0.2?'#8A2BE2':r<0.4?'#DDA0DD':WHITE; particles.push({ x, y, vx: -Math.random()*15-5, vy: (Math.random()-0.5)*6, life: 1, s: Math.random()*7+3, color: c, type: 'star' }); }
 
 function spawnObstacle() {
     let currentX = distance * 15; 
     if (currentX - lastSpawnDist > nextSpawnGoal) {
         lastSpawnDist = currentX; nextSpawnGoal = (superShotTimer > 0) ? (300 + Math.random() * 350) : (600 + Math.random() * 650); 
-        const r = Math.random(); let type; const gy = getGroundY();
-        
+        const r = Math.random(); let type, gy = getGroundY();
         if (distance >= 15000 && baseSpeed >= 55 && (distance - lastIceDist > 5000) && Math.random() < 0.07) { type = 'ice'; lastIceDist = distance; }
-        else if (cameraScrollY > 1500 && Math.random() < 0.7) type = 'space_leviathan';
         else if (superShotTimer > 0) type = (Math.random() < 0.7) ? 'flyer' : 'zombie'; 
         else { if (r < 0.22) type = 'flyer'; else if (r < 0.34) type = 'pit'; else if (r < 0.44) type = 'ramp'; else if (r < 0.49) type = 'ammo'; else if (r < 0.52) type = 'life'; else if (r < 0.55) type = 'boost'; else if (r < 0.58) type = 'shield'; else if (r < 0.61) type = 'superShot'; else type = 'zombie'; }
-        
         if (type === 'pit' && (boostExitSafety > 0 || gameSpeed > baseSpeed + 2)) type = 'zombie';
         if (type === 'ice') obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: 0, type: 'ice', hit: false });
-        else if (type === 'space_leviathan') { let alt = -cameraScrollY - 200 - Math.random() * 500; obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: 350, h: 350, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length), isDark: true }); }
-        else if (type === 'flyer') { let alt = (boostTimer > 0) ? (Math.random() * -1800 - 200) : (80 + Math.random() * (gy - 250)); let sz = (80 + Math.random() * 110) * (boostTimer > 0 ? 1.6 : 1); obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length) }); } 
-        else if (type === 'zombie') { let isElite = Math.random() < 0.15; let hz = (160 + Math.random()*120) * (isElite ? 1.7 : 1); obstacles.push({ x: canvas.width + 100, y: gy, w: hz * 0.65, h: hz, type: 'zombie', hit: false, zombieIdx: Math.floor(Math.random()*zombieImages.length), isElite }); } 
+        else if (type === 'flyer') { let alt = (boostTimer > 0) ? (Math.random() * -1800 - 200) : (80 + Math.random() * (gy - 250)), sz = (80 + Math.random() * 110) * (boostTimer > 0 ? 1.6 : 1); obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length) }); } 
+        else if (type === 'zombie') { let isElite = Math.random() < 0.15, hz = (160 + Math.random()*120) * (isElite ? 1.7 : 1); obstacles.push({ x: canvas.width + 100, y: gy, w: hz * 0.65, h: hz, type: 'zombie', hit: false, zombieIdx: Math.floor(Math.random()*zombieImages.length), isElite }); } 
         else if (['ammo','life','boost','superShot','shield'].includes(type)) { let iY = (hero.y < 350) ? (hero.y - 100 - Math.random() * 200) : gy - 70 - Math.random() * 350; obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: gy - iY, type, hit: false }); } 
-        else if (type === 'pit') { let w = 220 + Math.random()*220; let pp = [{x:0, y:0}]; for(let i=1; i<8; i++) pp.push({x:(i/8)*w, y: 130 + Math.random()*150}); pp.push({x:w, y:0}); obstacles.push({ x: canvas.width + 100, y: gy, w, h: 200, type: 'pit', hit: false, pitPoints: pp }); } 
-        else if (type === 'ramp') { let w = 180, h = 30 + Math.random() * 45; let rp = [{x:0, y:0}, {x:w, y:-h}, {x:w+30, y:-h*0.5}, {x:w+40, y:0}]; obstacles.push({ x: canvas.width + 100, y: gy, w, h, type: 'ramp', hit: false, rampPoints: rp }); }
+        else if (type === 'pit') { let w = 220 + Math.random()*220, pp = [{x:0, y:0}]; for(let i=1; i<8; i++) pp.push({x:(i/8)*w, y: 130 + Math.random()*150}); pp.push({x:w, y:0}); obstacles.push({ x: canvas.width + 100, y: gy, w, h: 200, type: 'pit', hit: false, pitPoints: pp }); } 
+        else if (type === 'ramp') { let w = 180, h = 30 + Math.random() * 45, rp = [{x:0, y:0}, {x:w, y:-h}, {x:w+30, y:-h*0.5}, {x:w+40, y:0}]; obstacles.push({ x: canvas.width + 100, y: gy, w, h, type: 'ramp', hit: false, rampPoints: rp }); }
     }
 }
 
 function render(currentTime) {
     if (!lastTime) lastTime = currentTime; let ts = Math.min((currentTime - lastTime) / 16.6, 2); lastTime = currentTime; frame++; 
     if (!isGameOver) { 
-        if (isBraking) { baseSpeed += (targetBaseSpeed - baseSpeed) * 0.05 * ts; if (Math.abs(baseSpeed - targetBaseSpeed) < 0.1) { baseSpeed = targetBaseSpeed; isBraking = false; } } 
-        else baseSpeed = Math.min(baseSpeed + 0.0012 * ts, 55); 
-        if (boostTimer > 0) gameSpeed = Math.min(gameSpeed + 1.2 * ts, 45); 
-        else gameSpeed = Math.max(baseSpeed, gameSpeed - 0.2 * ts);
+        if (isBraking) { baseSpeed += (targetBaseSpeed - baseSpeed) * 0.05 * ts; if (Math.abs(baseSpeed - targetBaseSpeed) < 0.1) { baseSpeed = targetBaseSpeed; isBraking = false; } } else baseSpeed = Math.min(baseSpeed + 0.0012 * ts, 55); 
+        if (boostTimer > 0) gameSpeed = Math.min(gameSpeed + 1.2 * ts, 45); else gameSpeed = Math.max(baseSpeed, gameSpeed - 0.2 * ts);
         distance += (gameSpeed * ts) / 10; distValEl.innerHTML = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(1) + "<span class='km-unit'>км</span>"; 
         let tCY = 0; if (hero.y < canvas.height * 0.4) tCY = (canvas.height * 0.4) - hero.y; cameraScrollY += (tCY - cameraScrollY) * 0.1 * ts; spawnObstacle();
     } else cameraScrollY *= (1 - 0.05 * ts);
-
-    const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0) ; if (shakeTime > 0) shakeTime--;
-    let skyL = Math.min(1, Math.max(0, cameraScrollY / 2000)); 
-    ctx.fillStyle = `rgb(${255-skyL*200}, ${194-skyL*180}, ${64-skyL*60})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (cameraScrollY > 400) {
-        let gSO = Math.min(1, (cameraScrollY - 400) / 1200); ctx.save();
-        gameStars.forEach(s => { if (s.isBlinking) { s.opacity += s.blinkSpeed; if (s.opacity > 1 || s.opacity < 0.2) s.blinkSpeed *= -1; } ctx.globalAlpha = gSO * (s.isBlinking ? s.opacity : 0.8); ctx.fillStyle = WHITE; const px = s.x * canvas.width, py = s.y * canvas.height, sz = s.size; ctx.beginPath(); ctx.moveTo(px, py - sz * 1.5); ctx.lineTo(px + sz * 0.4, py - sz * 0.4); ctx.lineTo(px + sz * 1.5, py); ctx.lineTo(px + sz * 0.4, py + sz * 0.4); ctx.lineTo(px, py + sz * 1.5); ctx.lineTo(px - sz * 0.4, py + sz * 0.4); ctx.lineTo(px - sz * 1.5, py); ctx.lineTo(px - sz * 0.4, py - sz * 0.4); ctx.closePath(); ctx.fill(); }); ctx.restore();
-    }
-
+    const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0); if (shakeTime > 0) shakeTime--;
+    let skyL = Math.min(1, Math.max(0, cameraScrollY / 2000)); ctx.fillStyle = `rgb(${255-skyL*200}, ${194-skyL*180}, ${64-skyL*60})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (cameraScrollY > 400) { let gSO = Math.min(1, (cameraScrollY - 400) / 1200); ctx.save(); gameStars.forEach(s => { if (s.isBlinking) { s.opacity += s.blinkSpeed; if (s.opacity > 1 || s.opacity < 0.2) s.blinkSpeed *= -1; } ctx.globalAlpha = gSO * (s.isBlinking ? s.opacity : 0.8); ctx.fillStyle = WHITE; const px = s.x * canvas.width, py = s.y * canvas.height, sz = s.size; ctx.beginPath(); ctx.moveTo(px, py - sz * 1.5); ctx.lineTo(px + sz * 0.4, py - sz * 0.4); ctx.lineTo(px + sz * 1.5, py); ctx.lineTo(px + sz * 0.4, py + sz * 0.4); ctx.lineTo(px, py + sz * 1.5); ctx.lineTo(px - sz * 0.4, py + sz * 0.4); ctx.lineTo(px - sz * 1.5, py); ctx.lineTo(px - sz * 0.4, py - sz * 0.4); ctx.closePath(); ctx.fill(); }); ctx.restore(); }
     drawCloudsLayer(cloudsData, distance * 2.2, fcy * 0.45); drawCitylineLayer(city2Data, distance * 1.5, fcy * 0.3, DARK_YELLOW); drawMountainsLayer(backMountains, distance * 3.0, fcy * 0.5); drawCitylineLayer(city1Data, distance * 6.0, fcy * 0.65, CITY_BROWN); drawMountainsLayer(frontMountains, distance * 9.0, fcy * 0.8); drawStaticObjectsLayer(mtnObjData, distance * 9.0, fcy * 0.8);
     ctx.fillStyle = BLACK; ctx.fillRect(0, gy + fcy, canvas.width, canvas.height + 3500);
-
     obstacles = obstacles.filter(o => o.x > -1200);
     obstacles.forEach(o => {
         o.x -= gameSpeed * ts; if (o.hit) return; let drawY = gy + fcy;
         if (o.type === 'pit') { ctx.fillStyle = PIT_COLOR; ctx.beginPath(); ctx.moveTo(o.x, drawY - 2); o.pitPoints.forEach(p => ctx.lineTo(o.x + p.x, drawY + p.y)); ctx.lineTo(o.x + o.w, drawY - 2); ctx.fill(); }
         else if (o.type === 'ramp') { ctx.fillStyle = BLACK; ctx.beginPath(); ctx.moveTo(o.x, drawY); o.rampPoints.forEach(p => ctx.lineTo(o.x + p.x, drawY + p.y)); ctx.lineTo(o.x + o.w + 40, drawY + 100); ctx.lineTo(o.x - 40, drawY + 100); ctx.closePath(); ctx.fill(); }
-        else if (o.type === 'zombie') { const zI = zombieImages[o.zombieIdx]; if(zI) { const asp = zI.width / zI.height; const dW = o.h * asp; ctx.drawImage(zI, o.x, gy - o.h + fcy + 12, dW, o.h); o.currentDrawW = dW; } }
-        else if (o.type === 'flyer') { const fI = flyingImages[o.flyIdx]; if(fI) { const asp = fI.width / fI.height; const dW = o.w * asp; o.currentY = o.baseY + Math.sin(frame * 0.05) * 35; if (o.isDark) ctx.filter = 'brightness(0)'; ctx.drawImage(fI, o.x, o.currentY + fcy, dW, o.h); ctx.filter = 'none'; o.currentDrawW = dW; } }
-        else { const iI = ({ammo:ammoImg, life:lifeImg, boost:boostImg, superShot:superShotImg, shield:shieldImg, ice:iceItemImg}[o.type] || ammoImg); const dH = 75; const dW = (iI.width / iI.height) * dH; ctx.drawImage(iI, o.x, gy - dH - o.offY + fcy, dW, dH); o.currentDrawW = dW; o.currentDrawH = dH; }
-
+        else if (o.type === 'zombie') { const zI = zombieImages[o.zombieIdx]; if(zI) { const asp = zI.width / zI.height, dW = o.h * asp; ctx.drawImage(zI, o.x, gy - o.h + fcy + 12, dW, o.h); o.currentDrawW = dW; } }
+        else if (o.type === 'flyer') { const fI = flyingImages[o.flyIdx]; if(fI) { const asp = fI.width / fI.height, dW = o.w * asp; o.currentY = o.baseY + Math.sin(frame * 0.05) * 35; ctx.drawImage(fI, o.x, o.currentY + fcy, dW, o.h); o.currentDrawW = dW; } }
+        else { const iI = ({ammo:ammoImg, life:lifeImg, boost:boostImg, superShot:superShotImg, shield:shieldImg, ice:iceItemImg}[o.type] || ammoImg), dH = 75, dW = (iI.width / iI.height) * dH; ctx.drawImage(iI, o.x, gy - dH - o.offY + fcy, dW, dH); o.currentDrawW = dW; o.currentDrawH = dH; }
         if (!isGameOver) { 
-            let it = (o.type === 'zombie') ? (gy - o.h) : (o.type === 'flyer' ? o.currentY : gy - (o.currentDrawH || 60) - o.offY); 
-            let tw = o.currentDrawW || o.w || 60, th = o.currentDrawH || o.h || 60; 
+            let it = (o.type === 'zombie') ? (gy - o.h) : (o.type === 'flyer' ? o.currentY : gy - (o.currentDrawH || 60) - o.offY), tw = o.currentDrawW || o.w || 60, th = o.currentDrawH || o.h || 60; 
             if (hero.x < o.x + tw - 20 && hero.x + hero.w > o.x + 20 && hero.y < it + th && hero.y + hero.h > it) { 
-                if(o.type==='ammo') { o.hit = true; sounds.ammo.currentTime = 0; sounds.ammo.play(); updateAmmo(ammo + 10); createExplosion(o.x + tw/2, it + th/2, 10, WHITE, 'sun_rays'); } 
-                else if(o.type==='life') { o.hit = true; sounds.life.currentTime = 0; sounds.life.play(); hp = Math.min(100, hp + 30); updateHPBar(); createExplosion(o.x + tw/2, it + th/2, 12, '#dd2211', 'heart'); } 
-                else if(o.type==='boost') { o.hit = true; sounds.boost.currentTime = 0; sounds.boost.play(); boostTimer = 350; createExplosion(o.x + tw/2, it + th/2, 20, WHITE, 'star'); }
-                else if(o.type==='superShot') { o.hit = true; sounds.super.currentTime = 0; sounds.super.play(); superShotTimer = 400; createExplosion(o.x + tw/2, it + th/2, 12, WHITE, 'sun_rays'); } 
-                else if(o.type==='shield') { o.hit = true; sounds.shield.currentTime = 0; sounds.shield.play(); shieldTimer = 380; createExplosion(o.x + tw/2, it + th/2, 15, '#f08614', 'square'); }
-                else if(o.type==='ice') { o.hit = true; sounds.ice.currentTime = 0; sounds.ice.play(); targetBaseSpeed = baseSpeed * 0.6; isBraking = true; createExplosion(o.x + tw/2, it + th/2, 20, '#00f2ff', 'square'); }
-                else if (o.type === 'zombie' || o.type === 'flyer') { 
-                    o.hit = true; addEnemyKill(); createExplosion(o.x+tw/2, it+th/2, o.isElite ? 35 : 15, WHITE, 'square'); 
-                    if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { 
-                        if(hero.dy > 0 && shieldTimer <= 0 && boostTimer <= 0 && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } 
-                    } else { takeDamage(20); } 
-                }
+                if(['ammo','life','boost','superShot','shield','ice'].includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){boostTimer=350;sounds.boost.play();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){targetBaseSpeed=baseSpeed*0.6;isBraking=true;sounds.ice.play();} }
+                else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; addEnemyKill(); if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && boostTimer <= 0 && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             } 
         }
     });
+    particles = particles.filter(p => {
+        p.x += p.vx * ts;
+        p.y += p.vy * ts;
+        p.life -= 0.03 * ts;
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
 
-    particles = particles.filter(p => { 
-        p.x += p.vx * ts; p.y += p.vy * ts; p.life -= 0.03 * ts; ctx.globalAlpha = p.life; 
-        if (p.type === 'sun_rays') { ctx.strokeStyle = WHITE; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y + fcy); ctx.lineTo(p.x + Math.cos(p.angle) * 12, p.y + fcy + Math.sin(p.angle) * 12); ctx.stroke(); } 
-        else if (p.type === 'star') { ctx.fillStyle = p.color; const px = p.x, py = p.y + fcy, ps = p.s; ctx.beginPath(); ctx.moveTo(px, py - ps * 1.5); ctx.lineTo(px + ps * 0.4, py - ps * 0.4); ctx.lineTo(px + ps * 1.5, py); ctx.lineTo(px + ps * 0.4, py + ps * 0.4); ctx.lineTo(px, py + ps * 1.5); ctx.lineTo(px - ps * 0.4, py + ps * 0.4); ctx.lineTo(px - ps * 1.5, py); ctx.lineTo(px - ps * 0.4, py - ps * 0.4); ctx.closePath(); ctx.fill(); } 
-        else if (p.type === 'heart') { ctx.fillStyle = p.color; const s = p.s * 1.2; ctx.beginPath(); ctx.moveTo(p.x, p.y + fcy + s/4); ctx.bezierCurveTo(p.x, p.y + fcy, p.x - s/2, p.y + fcy, p.x - s/2, p.y + fcy + s/4); ctx.bezierCurveTo(p.x - s/2, p.y + fcy + s/2, p.x, p.y + fcy + s*0.7, p.x, p.y + fcy + s); ctx.bezierCurveTo(p.x, p.y + fcy + s*0.7, p.x + s/2, p.y + fcy + s/2, p.x + s/2, p.y + fcy + s/4); ctx.bezierCurveTo(p.x, p.y + fcy, p.x, p.y + fcy, p.x, p.y + fcy + s/4); ctx.fill(); } 
-        else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y + fcy, p.s, p.s); }
-        ctx.globalAlpha = 1; return p.life > 0; 
+        if (p.type === 'star') {
+            const sz = p.s;
+            const px = p.x;
+            const py = p.y + fcy;
+            ctx.beginPath();
+            ctx.moveTo(px, py - sz * 1.5);
+            ctx.lineTo(px + sz * 0.4, py - sz * 0.4);
+            ctx.lineTo(px + sz * 1.5, py);
+            ctx.lineTo(px + sz * 0.4, py + sz * 0.4);
+            ctx.lineTo(px, py + sz * 1.5);
+            ctx.lineTo(px - sz * 0.4, py + sz * 0.4);
+            ctx.lineTo(px - sz * 1.5, py);
+            ctx.lineTo(px - sz * 0.4, py - sz * 0.4);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.fillRect(p.x, p.y + fcy, p.s, p.s);
+        }
+
+        ctx.globalAlpha = 1;
+        return p.life > 0;
     });
-
     if (!isGameOver || hp > 0) { hero.update(ts); hero.draw(fcy); }
-    bullets = bullets.filter(b => { 
-        b.x += 28 * ts; let tH = 12, tW = (cigImg.width / cigImg.height) * tH; ctx.drawImage(cigImg, b.x, b.y + fcy - tH/2 + 8, tW, tH); 
-        obstacles.forEach(o => { if ((o.type === 'zombie' || o.type === 'flyer') && !o.hit) { let it = (o.type === 'flyer' ? o.currentY : gy - o.h); let tw = o.currentDrawW || o.w; if (b.x > o.x && b.x < o.x+tw && b.y + fcy > it + fcy && b.y + fcy < it+o.h + fcy) { o.hit = true; addEnemyKill(); createExplosion(o.x+tw/2, it+o.h/2, o.isElite ? 35 : 15, WHITE, 'square'); b.hit = true; } } }); return b.x < canvas.width && !b.hit; 
-    });
-    if (isGameOver) { 
-        gameOverTimer--; if (gameOverTimer < 90) { menuOverlay.style.display = 'flex'; menuOverlay.style.opacity = Math.min(1, (90 - gameOverTimer) / 60); } 
-        if (gameOverTimer < -60 && !canRestart) { 
-            canRestart = true; 
-            controlsText.innerText = isMobileDevice ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; 
-            controlsText.classList.add('show-text'); 
-        } 
+    bullets = bullets.filter(b => { b.x += 28 * ts; let tH = 12, tW = (cigImg.width / cigImg.height) * tH; ctx.drawImage(cigImg, b.x, b.y + fcy - tH/2 + 8, tW, tH); obstacles.forEach(o => { if ((o.type === 'zombie' || o.type === 'flyer') && !o.hit) { let it = (o.type === 'flyer' ? o.currentY : gy - o.h), tw = o.currentDrawW || o.w; if (b.x > o.x && b.x < o.x+tw && b.y + fcy > it + fcy && b.y + fcy < it+o.h + fcy) { o.hit = true; addEnemyKill(); b.hit = true; } } }); return b.x < canvas.width && !b.hit; });
+    if (isGameOver) {
+        gameOverTimer--;
+        if (gameOverTimer < 90) {
+            menuOverlay.style.display = 'flex';
+            menuOverlay.style.opacity = Math.min(1, (90 - gameOverTimer) / 60);
+            if (!isLeaderboardPulseSynced) {
+                restartLeaderboardPulse();
+                isLeaderboardPulseSynced = true;
+            }
+        }
+        if (gameOverTimer < -60 && !canRestart) { canRestart = true; controlsText.innerText = isMobileDevice ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; controlsText.classList.add('show-text'); }
     }
     animationId = requestAnimationFrame(render);
 }
 
-function drawCitylineLayer(cityData, camX, camY, panelColor) { const gy = getGroundY(); const tw = cityData.totalWidth; ctx.fillStyle = panelColor; ctx.fillRect(0, gy + camY + 8, canvas.width, 3500); cityData.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -1500) dx += tw; if (dx > canvas.width + 1500) dx -= tw; ctx.drawImage(obj.img, dx, gy - (obj.img.height * obj.scale) + camY + 12, obj.img.width * obj.scale, obj.img.height * obj.scale); }); }
-function drawCloudsLayer(data, camX, camY) { const tw = data.totalWidth; const gy = getGroundY(); data.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -1500) dx += tw; if (dx > canvas.width + 1500) dx -= tw; ctx.save(); ctx.globalAlpha = obj.opacity; ctx.drawImage(obj.img, dx, gy + obj.offY + camY, obj.img.width * obj.scale, obj.img.height * obj.scale); ctx.restore(); }); }
+function drawCitylineLayer(cityData, camX, camY, panelColor) { const gy = getGroundY(), tw = cityData.totalWidth; ctx.fillStyle = panelColor; ctx.fillRect(0, gy + camY + 8, canvas.width, 3500); cityData.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -1500) dx += tw; if (dx > canvas.width + 1500) dx -= tw; ctx.drawImage(obj.img, dx, gy - (obj.img.height * obj.scale) + camY + 12, obj.img.width * obj.scale, obj.img.height * obj.scale); }); }
+function drawCloudsLayer(data, camX, camY) { const tw = data.totalWidth, gy = getGroundY(); data.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -1500) dx += tw; if (dx > canvas.width + 1500) dx -= tw; ctx.save(); ctx.globalAlpha = obj.opacity; ctx.drawImage(obj.img, dx, gy + obj.offY + camY, obj.img.width * obj.scale, obj.img.height * obj.scale); ctx.restore(); }); }
 function drawMountainsLayer(mountainsArray, camX, camY) { const gy = getGroundY(), tw = mountainsArray.length * canvas.width; mountainsArray.forEach(mt => { let dx = (mt.xOffset - camX) % tw; if (dx < -canvas.width) dx += tw; if (dx > canvas.width) dx -= tw; ctx.fillStyle = mt.color; ctx.beginPath(); ctx.moveTo(dx, canvas.height + 2500); ctx.lineTo(dx + mt.points[0].x, gy + mt.points[0].y + camY); for (let j = 1; j < mt.points.length; j++) ctx.lineTo(dx + mt.points[j].x, gy + mt.points[j].y + camY); ctx.lineTo(dx + canvas.width, canvas.height + 2500); ctx.closePath(); ctx.fill(); }); }
 function drawStaticObjectsLayer(data, camX, camY) { const gy = getGroundY(), tw = data.totalWidth; data.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -2500) dx += tw; if (dx > canvas.width + 2500) dx -= tw; if (obj.img.complete) ctx.drawImage(obj.img, dx, gy - obj.img.height + camY + 20); }); }
 
 function triggerGameOver() { 
     if (isGameOver) return; isGameOver = true; isFiring = false; 
     let fadeOut = setInterval(() => { if (currentTrack.volume > 0.01) { currentTrack.volume -= 0.01; } else { currentTrack.volume = 0; currentTrack.pause(); clearInterval(fadeOut); } }, 20); 
-    sounds.woosh.pause(); sounds.power.pause();
-    sounds.death.play(); 
-    sounds.bg.currentTime = 0; sounds.bg.play(); 
-    gameOverTimer = 150; shakeTime = 40; canRestart = false; 
-    controlsText.classList.remove('show-text'); 
+    sounds.woosh.pause(); sounds.power.pause(); sounds.death.play(); sounds.bg.currentTime = 0; sounds.bg.play(); 
+    gameOverTimer = 150; shakeTime = 40; canRestart = false; controlsText.classList.remove('show-text'); 
     const dText = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(1) + "км"; 
     topInfoText.innerText = "ДИСТАНЦИЯ: " + dText; 
     menuStatusWrapper.style.fontSize = isMobileDevice ? "45px" : "75px"; 
     menuStatusWrapper.innerText = "УНИЧТОЖЕНО: " + enemiesDefeated; 
     adjustMenuScale();
+    restartLeaderboardPulse();
+    saveCurrentUserStats();
 }
 
 function start() { 
+    if (isModalOpen) return;
+    isLeaderboardPulseSynced = false;
     sounds.bg.pause(); if (!isMobileDevice) currentTrack.volume = 0.3; currentTrack.currentTime = 0; currentTrack.play(); 
     menuOverlay.style.opacity = 0; setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200); 
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; nextSpawnGoal = 500; lastIceDist = 0; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0; cheatLife = false; 
-    killedWrapper.classList.remove('pulse-bonus'); ammoCountEl.classList.remove('pulse-bonus');
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
 }
 
 window.addEventListener('keydown', (e) => { 
-    if (e.key === 'Alt') { e.preventDefault(); cheatLife = false; gameSpeed = baseSpeed; cheatBuffer = ""; return; }
-    if (e.key.length === 1) { cheatBuffer += e.key.toLowerCase(); if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.substring(1); if (cheatBuffer.endsWith("life") || cheatBuffer.endsWith("дшау")) { cheatLife = !cheatLife; sounds.life.play(); cheatBuffer = ""; } }
+    if (isModalOpen) return;
     if (e.code === 'Space') { e.preventDefault(); if (isFirstRun || (isGameOver && canRestart)) start(); else hero.jump(); } 
     if (e.key === 'Control' && !isGameOver && !isFirstRun) { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now()-lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } } 
 });
 window.addEventListener('keyup', (e) => { if (e.key === 'Control') isFiring = false; });
 window.addEventListener('touchstart', (e) => {
-    e.preventDefault(); const touchX = e.touches[0].clientX; const mid = window.innerWidth / 2;
+    if (isModalOpen) return;
+    const target = e.target;
+    if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('#global-leaderboard-btn')) return;
+    e.preventDefault(); const touchX = e.touches[0].clientX, mid = window.innerWidth / 2;
     if (isFirstRun || (isGameOver && canRestart)) { start(); return; }
-    if (touchX < mid) { hero.jump(); } else { if (!isGameOver && !isFirstRun) { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } } }
+    if (touchX < mid) hero.jump(); else { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } }
 }, { passive: false });
-window.addEventListener('touchend', (e) => {
-    let stillFiring = false; for (let i = 0; i < e.touches.length; i++) { if (e.touches[i].clientX >= window.innerWidth / 2) stillFiring = true; }
-    if (!stillFiring) isFiring = false;
-});
-
-window.addEventListener('load', () => { 
-    if (!isMobileDevice) showMenuSounds(); 
-});
+window.addEventListener('touchend', (e) => { let stillFiring = false; for (let i = 0; i < e.touches.length; i++) { if (e.touches[i].clientX >= window.innerWidth / 2) stillFiring = true; } if (!stillFiring) isFiring = false; });
 </script>
 </body>
 </html>
