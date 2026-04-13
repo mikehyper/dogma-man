@@ -532,6 +532,17 @@ function nicknameToEmail(name) {
     return `u${encoded || 'player'}@dogma.local`;
 }
 
+function legacyNicknameToEmail(name) {
+    const normalized = name.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    return `${normalized || 'player'}@dogma.local`;
+}
+
+function nicknameEmailCandidates(name) {
+    const primary = nicknameToEmail(name);
+    const legacy = legacyNicknameToEmail(name);
+    return primary === legacy ? [primary] : [primary, legacy];
+}
+
 function initFirebase() {
     if (typeof firebase === 'undefined') return;
     if (!isFirebaseConfigured()) return;
@@ -579,7 +590,8 @@ async function performAuth(type, name, pass) {
         return true;
     }
 
-    const email = nicknameToEmail(name);
+    const emails = nicknameEmailCandidates(name);
+    const email = emails[0];
     try {
         let cred;
         if (type === 'reg') {
@@ -594,7 +606,16 @@ async function performAuth(type, name, pass) {
             }, { merge: true });
             applyAuthState(name, cred.user.uid);
         } else {
-            cred = await fbAuth.signInWithEmailAndPassword(email, pass);
+            let lastErr = null;
+            for (const candidate of emails) {
+                try {
+                    cred = await fbAuth.signInWithEmailAndPassword(candidate, pass);
+                    break;
+                } catch (signInErr) {
+                    lastErr = signInErr;
+                }
+            }
+            if (!cred) throw lastErr;
             const snap = await fbDb.collection('players').doc(cred.user.uid).get();
             const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
             applyAuthState(profileName, cred.user.uid);
