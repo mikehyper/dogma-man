@@ -525,8 +525,11 @@ function isFirebaseConfigured() {
 }
 
 function nicknameToEmail(name) {
-    const normalized = name.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
-    return `${normalized || 'player'}@dogma.local`;
+    const normalized = name.trim().toLowerCase();
+    // encodeURIComponent стабильно кодирует кириллицу и спецсимволы в hex-последовательность.
+    // Удаляем '%' и используем как безопасную уникальную часть email.
+    const encoded = encodeURIComponent(normalized).replace(/%/g, '').slice(0, 60);
+    return `u${encoded || 'player'}@dogma.local`;
 }
 
 function initFirebase() {
