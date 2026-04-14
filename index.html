@@ -414,8 +414,8 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('reg-modal')">×</button>
             <h2>РЕГИСТРАЦИЯ</h2>
-            <input type="text" id="reg-name" placeholder="ВВЕДИТЕ ИМЯ">
-            <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ">
+            <input type="text" id="reg-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
+            <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="handleAuth('reg')">ОКЕЙ</button>
         </div>
     </div>
@@ -424,8 +424,8 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('login-modal')">×</button>
             <h2>ВХОД</h2>
-            <input type="text" id="login-name" placeholder="НИКНЕЙМ">
-            <input type="password" id="login-pass" placeholder="ВАШ ПАРОЛЬ">
+            <input type="text" id="login-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
+            <input type="password" id="login-pass" placeholder="ВАШ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="handleAuth('login')">ОКЕЙ</button>
         </div>
     </div>
@@ -453,8 +453,8 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeMobileScreen('mobile-auth-screen')">×</button>
             <h2 id="mobile-auth-title">РЕГИСТРАЦИЯ</h2>
-            <input type="text" id="mobile-auth-name" placeholder="НИКНЕЙМ">
-            <input type="password" id="mobile-auth-pass" placeholder="ПАРОЛЬ">
+            <input type="text" id="mobile-auth-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
+            <input type="password" id="mobile-auth-pass" placeholder="ВАШ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="submitMobileAuth()">ОКЕЙ</button>
         </div>
     </div>
@@ -543,6 +543,15 @@ function nicknameEmailCandidates(name) {
     return primary === legacy ? [primary] : [primary, legacy];
 }
 
+function normalizeTelegramUsername(value) {
+    return (value || '').trim().replace(/^@+/, '');
+}
+
+function isValidTelegramUsername(value) {
+    // Telegram username: 5-32 chars, letters/digits/underscore, no underscore at edges.
+    return /^[A-Za-z0-9](?:[A-Za-z0-9_]{3,30}[A-Za-z0-9])$/.test(value);
+}
+
 function initFirebase() {
     if (typeof firebase === 'undefined') return;
     if (!isFirebaseConfigured()) return;
@@ -557,14 +566,14 @@ function initFirebase() {
 }
 
 function applyAuthState(name, uid = null) {
-    currentUser = name || null;
+    currentUser = name ? normalizeTelegramUsername(name) : null;
     currentUserUid = uid || null;
     const guestGroup = document.getElementById('guest-group');
     const userGroup = document.getElementById('user-group');
     const nicknameEl = document.getElementById('display-nickname');
 
     if (currentUser) {
-        nicknameEl.innerText = currentUser.toUpperCase();
+        nicknameEl.innerText = currentUser;
         guestGroup.style.display = 'none';
         userGroup.style.display = 'flex';
     } else {
@@ -582,6 +591,7 @@ function persistCurrentUser() {
 }
 
 async function performAuth(type, name, pass) {
+    name = normalizeTelegramUsername(name);
     if (!name || !pass) return false;
 
     if (!firebaseEnabled) {
@@ -633,16 +643,16 @@ async function performAuth(type, name, pass) {
                 const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
-                alert('Этот ник уже зарегистрирован. Выполнен вход.');
+                alert('Этот username уже зарегистрирован. Выполнен вход.');
                 return true;
             } catch (loginErr) {
-                alert('Этот ник уже зарегистрирован. Нажмите "ВХОД" и введите верный пароль.');
+                alert('Этот username уже зарегистрирован. Нажмите "ВХОД" и введите верный пароль.');
                 return false;
             }
         }
 
         if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
-            alert('Неверный пароль или никнейм.');
+            alert('Неверный пароль или Telegram username.');
             return false;
         }
 
@@ -683,7 +693,7 @@ async function loadCloudScores() {
         snap.forEach((doc) => {
             const d = doc.data();
             items.push({
-                name: (d.nickname || 'ИГРОК').toUpperCase(),
+                name: normalizeTelegramUsername(d.nickname || 'igrok'),
                 kills: Number(d.kills || 0),
                 dist: Number(d.distKm || 0).toFixed(1),
                 current: doc.id === currentUserUid
@@ -714,9 +724,14 @@ function closeModal(id) {
 async function handleAuth(type) {
     const input = type === 'reg' ? document.getElementById('reg-name') : document.getElementById('login-name');
     const passInput = type === 'reg' ? document.getElementById('reg-pass') : document.getElementById('login-pass');
-    let name = input.value.trim();
+    let name = normalizeTelegramUsername(input.value);
     const pass = passInput.value.trim();
     if (!name || !pass) return;
+    if (!isValidTelegramUsername(name)) {
+        alert('Telegram username должен быть 5-32 символа, содержать только буквы, цифры и "_", без "_" в начале/конце.');
+        return;
+    }
+    input.value = name;
     const ok = await performAuth(type, name, pass);
     if (!ok) return;
     
@@ -773,13 +788,13 @@ async function openScoreboard(focusCurrentUser = false) {
         { name: "RIFTDOG", kills: 116, dist: 2.7 },
         { name: "MECHBEAT", kills: 109, dist: 2.5 },
         { name: "SHADOW", kills: 101, dist: 2.2 },
-        { name: (currentUser || "ГОСТЬ").toUpperCase(), kills: enemiesDefeated, dist: (distance/1000).toFixed(1), current: true }
+        { name: normalizeTelegramUsername(currentUser || "gost"), kills: enemiesDefeated, dist: (distance/1000).toFixed(1), current: true }
         ].sort((a,b) => b.kills - a.kills);
     }
 
     if (currentUser && !globalScores.some((x) => x.current)) {
         globalScores.push({
-            name: currentUser.toUpperCase(),
+            name: normalizeTelegramUsername(currentUser),
             kills: enemiesDefeated,
             dist: (distance / 1000).toFixed(1),
             current: true
@@ -821,7 +836,8 @@ function renderScoreTable(data) {
 
     data.forEach((d) => {
         const originalIndex = globalScores.findIndex(item => item.name === d.name && item.kills === d.kills) + 1;
-        const rowHtml = `<td>${originalIndex}</td><td>${d.name}</td><td>${d.kills}</td><td>${d.dist}</td>`;
+        const cleanName = normalizeTelegramUsername(d.name || 'igrok');
+        const rowHtml = `<td>${originalIndex}</td><td>@${cleanName}</td><td>${d.kills}</td><td>${d.dist}</td>`;
 
         if (body) {
             const row = document.createElement('tr');
@@ -842,8 +858,8 @@ function filterScoreboard() {
     const mobileScreen = document.getElementById('mobile-score-screen');
     const useMobileSearch = isMobileDevice && mobileScreen && mobileScreen.style.display === 'flex';
     const searchInput = useMobileSearch ? document.getElementById('mobile-score-search') : document.getElementById('score-search');
-    const val = searchInput.value.toUpperCase();
-    const filtered = globalScores.filter(d => d.name.toUpperCase().startsWith(val));
+    const val = normalizeTelegramUsername(searchInput.value).toUpperCase();
+    const filtered = globalScores.filter(d => normalizeTelegramUsername(d.name).toUpperCase().startsWith(val));
     renderScoreTable(filtered);
 }
 
@@ -854,8 +870,8 @@ function openMobileAuth(mode) {
     const nameInput = document.getElementById('mobile-auth-name');
     const passInput = document.getElementById('mobile-auth-pass');
     title.innerText = mode === 'reg' ? 'РЕГИСТРАЦИЯ' : 'ВХОД';
-    nameInput.placeholder = 'НИКНЕЙМ';
-    passInput.placeholder = mode === 'reg' ? 'ПРИДУМАЙТЕ ПАРОЛЬ' : 'ВАШ ПАРОЛЬ';
+    nameInput.placeholder = 'ЮЗЕРНЕЙМ В TELEGRAM';
+    passInput.placeholder = mode === 'reg' ? 'ПРИДУМАЙТЕ ПАРОЛЬ В ИГРЕ' : 'ВАШ ПАРОЛЬ В ИГРЕ';
     nameInput.value = '';
     passInput.value = '';
     screen.style.display = 'flex';
@@ -864,9 +880,15 @@ function openMobileAuth(mode) {
 }
 
 async function submitMobileAuth() {
-    const name = document.getElementById('mobile-auth-name').value.trim();
+    const nameInput = document.getElementById('mobile-auth-name');
+    const name = normalizeTelegramUsername(nameInput.value);
     const pass = document.getElementById('mobile-auth-pass').value.trim();
     if (!name || !pass) return;
+    if (!isValidTelegramUsername(name)) {
+        alert('Telegram username должен быть 5-32 символа, содержать только буквы, цифры и "_", без "_" в начале/конце.');
+        return;
+    }
+    nameInput.value = name;
     const ok = await performAuth(mobileAuthMode, name, pass);
     if (!ok) return;
     closeMobileScreen('mobile-auth-screen');
