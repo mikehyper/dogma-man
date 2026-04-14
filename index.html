@@ -113,17 +113,23 @@
         .user-nick-btn { 
             gap: 8px; font-size: 28px; height: 54px; 
             box-sizing: border-box; animation-delay: 0.15s; 
-            max-width: 330px; overflow: hidden; justify-content: flex-start;
-            padding-left: 12px;
+            width: 330px; max-width: 330px; overflow: hidden; justify-content: flex-start;
+            padding: 0 12px;
+        }
+        .user-nick-text-clip {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            transform: translateY(-3px);
         }
         .user-nick-btn span {
-            display: block;
+            display: inline-block;
             line-height: 1;
             white-space: nowrap;
-            overflow: hidden;
-            mask-image: linear-gradient(to right, black 84%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to right, black 84%, transparent 100%);
-            transform: translateY(-3px);
+            transform: translateX(var(--nick-shift, 0px));
+            transition: transform 0.9s ease;
         }
         .user-nick-btn img { height: 24px; width: auto; flex-shrink: 0; margin-left: -4px; }
 
@@ -347,8 +353,8 @@
                 border-width: 2px;
             }
             .auth-btn-group .dogma-btn { font-size: 22px; padding: 0 16px; height: 54px; border-width: 3px; }
-            .user-nick-btn { font-size: 22px; height: 54px; max-width: 250px; gap: 4px; padding: 0 10px 0 4px; }
-            .user-nick-btn span { transform: translateY(3px); }
+            .user-nick-btn { font-size: 22px; height: 54px; width: 250px; max-width: 250px; gap: 4px; padding: 0 10px 0 4px; }
+            .user-nick-text-clip { transform: translateY(3px); }
             .user-nick-btn img { height: 21px; margin-right: -1px; margin-left: -6px; }
             .icon-btn { width: 54px; height: 54px; }
             #global-leaderboard-btn { width: 70px; height: 70px; bottom: 20px; right: 20px; }
@@ -382,7 +388,9 @@
                 </button>
                 <button class="dogma-btn user-nick-btn" onclick="openScoreboard(true)">
                     <img src="img/win.png" alt="Win">
-                    <span id="display-nickname">ГОСТЬ</span>
+                    <div class="user-nick-text-clip">
+                        <span id="display-nickname">ГОСТЬ</span>
+                    </div>
                 </button>
             </div>
         </div>
@@ -510,6 +518,8 @@ let firebaseEnabled = false;
 let fbAuth = null;
 let fbDb = null;
 let mobileAuthMode = 'reg';
+let nickMarqueeInterval = null;
+let nickMarqueeStartTimeout = null;
 
 const firebaseConfig = {
     apiKey: "AIzaSyDxUdN8_EzS7c_bOjY1_kmJrHf4mF9e5qY",
@@ -552,6 +562,39 @@ function isValidTelegramUsername(value) {
     return /^[A-Za-z0-9](?:[A-Za-z0-9_]{3,30}[A-Za-z0-9])$/.test(value);
 }
 
+function stopNicknameMarquee() {
+    if (nickMarqueeInterval) clearInterval(nickMarqueeInterval);
+    if (nickMarqueeStartTimeout) clearTimeout(nickMarqueeStartTimeout);
+    nickMarqueeInterval = null;
+    nickMarqueeStartTimeout = null;
+    const nicknameEl = document.getElementById('display-nickname');
+    if (nicknameEl) nicknameEl.style.setProperty('--nick-shift', '0px');
+}
+
+function restartNicknameMarquee() {
+    stopNicknameMarquee();
+    const nicknameEl = document.getElementById('display-nickname');
+    const clipEl = document.querySelector('.user-nick-text-clip');
+    if (!nicknameEl || !clipEl) return;
+
+    requestAnimationFrame(() => {
+        const overflow = nicknameEl.scrollWidth - clipEl.clientWidth;
+        if (overflow <= 2) return;
+
+        const maxShift = overflow + 8;
+        let showStart = false;
+        const toggleShift = () => {
+            nicknameEl.style.setProperty('--nick-shift', showStart ? '0px' : `-${maxShift}px`);
+            showStart = !showStart;
+        };
+
+        nickMarqueeStartTimeout = setTimeout(() => {
+            toggleShift();
+            nickMarqueeInterval = setInterval(toggleShift, 3600);
+        }, 1200);
+    });
+}
+
 function initFirebase() {
     if (typeof firebase === 'undefined') return;
     if (!isFirebaseConfigured()) return;
@@ -576,10 +619,12 @@ function applyAuthState(name, uid = null) {
         nicknameEl.innerText = currentUser;
         guestGroup.style.display = 'none';
         userGroup.style.display = 'flex';
+        restartNicknameMarquee();
     } else {
         nicknameEl.innerText = "ГОСТЬ";
         guestGroup.style.display = 'flex';
         userGroup.style.display = 'none';
+        stopNicknameMarquee();
     }
 }
 
@@ -930,6 +975,7 @@ function adjustMenuScale() {
 }
 window.addEventListener('resize', adjustMenuScale);
 window.addEventListener('DOMContentLoaded', adjustMenuScale);
+window.addEventListener('resize', restartNicknameMarquee);
 
 async function initFonts() {
     try {
