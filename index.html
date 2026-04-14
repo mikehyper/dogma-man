@@ -113,13 +113,13 @@
         .user-nick-btn { 
             gap: 4px; font-size: 28px; height: 54px; 
             box-sizing: border-box; animation-delay: 0.15s; 
-            width: 246px; max-width: 246px; overflow: hidden; justify-content: flex-start;
+            width: auto; max-width: 246px; overflow: hidden; justify-content: flex-start;
             padding: 0 10px 0 8px;
         }
         .user-nick-text-clip {
-            flex: 1;
-            min-width: 0;
+            flex: 0 1 auto;
             overflow: hidden;
+            max-width: 176px;
             mask-image: linear-gradient(to right, black 85%, transparent 100%);
             -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
             transform: translateY(-3px);
@@ -353,7 +353,8 @@
                 border-width: 2px;
             }
             .auth-btn-group .dogma-btn { font-size: 22px; padding: 0 16px; height: 54px; border-width: 3px; }
-            .user-nick-btn { font-size: 22px; height: 54px; width: 210px; max-width: 210px; gap: 2px; padding: 0 8px 0 4px; }
+            .user-nick-btn { font-size: 22px; height: 54px; width: auto; max-width: 210px; gap: 2px; padding: 0 8px 0 4px; }
+            .user-nick-text-clip { max-width: 145px; }
             .user-nick-text-clip { transform: translateY(3px); }
             .user-nick-btn img { height: 21px; margin-right: -1px; margin-left: -6px; }
             .icon-btn { width: 54px; height: 54px; }
