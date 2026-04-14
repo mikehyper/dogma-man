@@ -113,7 +113,7 @@
         .user-nick-btn { 
             gap: 8px; font-size: 28px; height: 54px; 
             box-sizing: border-box; animation-delay: 0.15s; 
-            width: 330px; max-width: 330px; overflow: hidden; justify-content: flex-start;
+            width: 280px; max-width: 280px; overflow: hidden; justify-content: flex-start;
             padding: 0 12px;
         }
         .user-nick-text-clip {
@@ -128,7 +128,7 @@
             display: inline-block;
             line-height: 1;
             white-space: nowrap;
-            transform: translateX(var(--nick-shift, 0px));
+            transform: translateX(0px);
             transition: transform 0.9s ease;
         }
         .user-nick-btn img { height: 24px; width: auto; flex-shrink: 0; margin-left: -4px; }
@@ -353,7 +353,7 @@
                 border-width: 2px;
             }
             .auth-btn-group .dogma-btn { font-size: 22px; padding: 0 16px; height: 54px; border-width: 3px; }
-            .user-nick-btn { font-size: 22px; height: 54px; width: 250px; max-width: 250px; gap: 4px; padding: 0 10px 0 4px; }
+            .user-nick-btn { font-size: 22px; height: 54px; width: 220px; max-width: 220px; gap: 4px; padding: 0 10px 0 4px; }
             .user-nick-text-clip { transform: translateY(3px); }
             .user-nick-btn img { height: 21px; margin-right: -1px; margin-left: -6px; }
             .icon-btn { width: 54px; height: 54px; }
@@ -568,7 +568,7 @@ function stopNicknameMarquee() {
     nickMarqueeInterval = null;
     nickMarqueeStartTimeout = null;
     const nicknameEl = document.getElementById('display-nickname');
-    if (nicknameEl) nicknameEl.style.setProperty('--nick-shift', '0px');
+    if (nicknameEl) nicknameEl.style.transform = 'translateX(0px)';
 }
 
 function restartNicknameMarquee() {
@@ -584,7 +584,7 @@ function restartNicknameMarquee() {
         const maxShift = overflow + 8;
         let showStart = false;
         const toggleShift = () => {
-            nicknameEl.style.setProperty('--nick-shift', showStart ? '0px' : `-${maxShift}px`);
+            nicknameEl.style.transform = showStart ? 'translateX(0px)' : `translateX(-${maxShift}px)`;
             showStart = !showStart;
         };
 
