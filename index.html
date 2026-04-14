@@ -1048,9 +1048,41 @@ const menuOverlay = document.getElementById('menu-overlay'), topInfoText = docum
 const controlsText = document.getElementById('controls-text'), hpBar = document.getElementById('hp-bar'), ammoCountEl = document.getElementById('ammo-count'), enemiesEl = document.getElementById('enemies'), distValEl = document.getElementById('distVal'), killedWrapper = document.getElementById('killed-wrapper');
 const leaderboardBtn = document.getElementById('global-leaderboard-btn');
 
-let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastIceDist = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let nextIceCheckpointKm = 30;
+let iceReadyForCurrentCheckpoint = false;
 let isLeaderboardPulseSynced = false;
 const MOBILE_WORLD_BASE_WIDTH = 980;
+const ICE_HIGH_SPEED_THRESHOLD = 55;
+
+function getIceSpawnRatio(checkpointKm) {
+    return checkpointKm === 30 ? 0.65 : 0.70;
+}
+
+function getIceAccessibleOffset() {
+    const nearGround = Math.random() < 0.6;
+    if (nearGround) return 35 + Math.random() * 70;   // near ground
+    return 140 + Math.random() * 120;                 // around single jump height
+}
+
+function tryGetIceSpawnConfig() {
+    if (baseSpeed < ICE_HIGH_SPEED_THRESHOLD) return null;
+
+    const currentKm = distance / 1000;
+    if (currentKm < nextIceCheckpointKm) return null;
+
+    if (!iceReadyForCurrentCheckpoint) iceReadyForCurrentCheckpoint = true;
+
+    const spawnRatio = getIceSpawnRatio(nextIceCheckpointKm);
+    const config = {
+        x: canvas.width * spawnRatio,
+        offY: getIceAccessibleOffset()
+    };
+
+    nextIceCheckpointKm += 10;
+    iceReadyForCurrentCheckpoint = false;
+    return config;
+}
 
 const MAIN_YELLOW = '#ffc240', DARK_YELLOW = '#E0A11D', SHADOW_YELLOW = '#c28b1a', PIT_COLOR = '#c28b1a', BLACK = '#000000', WHITE = '#ffffff', CITY_BROWN = '#AF7C22';
 
@@ -1180,11 +1212,12 @@ function spawnObstacle() {
     if (currentX - lastSpawnDist > nextSpawnGoal) {
         lastSpawnDist = currentX; nextSpawnGoal = (superShotTimer > 0) ? (300 + Math.random() * 350) : (600 + Math.random() * 650); 
         const r = Math.random(); let type, gy = getGroundY();
-        if (distance >= 15000 && baseSpeed >= 55 && (distance - lastIceDist > 5000) && Math.random() < 0.07) { type = 'ice'; lastIceDist = distance; }
+        const iceConfig = tryGetIceSpawnConfig();
+        if (iceConfig) type = 'ice';
         else if (superShotTimer > 0) type = (Math.random() < 0.7) ? 'flyer' : 'zombie'; 
         else { if (r < 0.22) type = 'flyer'; else if (r < 0.34) type = 'pit'; else if (r < 0.44) type = 'ramp'; else if (r < 0.49) type = 'ammo'; else if (r < 0.52) type = 'life'; else if (r < 0.55) type = 'boost'; else if (r < 0.58) type = 'shield'; else if (r < 0.61) type = 'superShot'; else type = 'zombie'; }
         if (type === 'pit' && (boostExitSafety > 0 || gameSpeed > baseSpeed + 2)) type = 'zombie';
-        if (type === 'ice') obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: 0, type: 'ice', hit: false });
+        if (type === 'ice') obstacles.push({ x: iceConfig.x, y: gy, w: 75, h: 75, offY: iceConfig.offY, type: 'ice', hit: false });
         else if (type === 'flyer') { let alt = (boostTimer > 0) ? (Math.random() * -1800 - 200) : (80 + Math.random() * (gy - 250)), sz = (80 + Math.random() * 110) * (boostTimer > 0 ? 1.6 : 1); obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length) }); } 
         else if (type === 'zombie') { let isElite = Math.random() < 0.15, hz = (160 + Math.random()*120) * (isElite ? 1.7 : 1); obstacles.push({ x: canvas.width + 100, y: gy, w: hz * 0.65, h: hz, type: 'zombie', hit: false, zombieIdx: Math.floor(Math.random()*zombieImages.length), isElite }); } 
         else if (['ammo','life','boost','superShot','shield'].includes(type)) { let iY = (hero.y < 350) ? (hero.y - 100 - Math.random() * 200) : gy - 70 - Math.random() * 350; obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: gy - iY, type, hit: false }); } 
@@ -1292,7 +1325,7 @@ function start() {
     isLeaderboardPulseSynced = false;
     sounds.bg.pause(); if (!isMobileDevice) currentTrack.volume = 0.3; currentTrack.currentTime = 0; currentTrack.play(); 
     menuOverlay.style.opacity = 0; setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200); 
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
 }
 
