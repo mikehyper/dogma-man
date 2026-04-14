@@ -34,7 +34,9 @@
             color: #000;
         }
         
-        canvas { display: block; image-rendering: pixelated; }
+        canvas { display: block; }
+        #stars-canvas { image-rendering: pixelated; }
+        #gameCanvas { image-rendering: auto; }
         
         /* Сброс синих ссылок и выделений */
         a, button, input, span, div {
@@ -1091,6 +1093,8 @@ function preloadEnemies() {
 preloadEnemies();
 
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), starsCanvas = document.getElementById('stars-canvas'), sCtx = starsCanvas.getContext('2d');
+ctx.imageSmoothingEnabled = true;
+sCtx.imageSmoothingEnabled = false;
 const menuOverlay = document.getElementById('menu-overlay'), topInfoText = document.getElementById('top-info-text'), menuStatusWrapper = document.getElementById('menu-status-wrapper');
 const controlsText = document.getElementById('controls-text'), hpBar = document.getElementById('hp-bar'), ammoCountEl = document.getElementById('ammo-count'), enemiesEl = document.getElementById('enemies'), distValEl = document.getElementById('distVal'), killedWrapper = document.getElementById('killed-wrapper');
 const leaderboardBtn = document.getElementById('global-leaderboard-btn');
