@@ -267,9 +267,9 @@
         @keyframes popInStar { 0% { transform: translate(-283px, 51px) scale(0); } 70% { transform: translate(-283px, 51px) scale(1.1); } 100% { transform: translate(-283px, 51px) scale(1); } }
         @keyframes popInDgm { 0% { transform: translate(-305px, -184px) scale(0); } 70% { transform: translate(-305px, -184px) scale(1.1); } 100% { transform: translate(-305px, -184px) scale(1); } }
         @keyframes popInGlow { 0% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0); } 70% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); } 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); } }
-
         #menu-logo { width: 700px; height: auto; z-index: 12; margin-bottom: -90px; margin-left: 50px; position: relative; transform: scale(0); animation: popInCenter 0.5s 0.1s cubic-bezier(0.17, 0.67, 0.83, 1) forwards; }
         #menu-hero { width: 450px; height: auto; z-index: 15; position: relative; margin-top: 20px; margin-left: -50px; transform: scale(0); animation: popInCenter 0.5s 0.3s cubic-bezier(0.17, 0.67, 0.83, 1) forwards; }
+        #menu-logo, #menu-hero, #menu-glow, #obj-cig, #obj-leaf, #obj-star, #obj-dgm { will-change: translate; }
         
         #menu-glow { 
             position: absolute; 
@@ -1042,6 +1042,86 @@ window.addEventListener('DOMContentLoaded', () => {
             if (e.target === screen) closeMobileScreen(id);
         });
     });
+
+    const menuOverlayEl = document.getElementById('menu-overlay');
+    const menuHeroEl = document.getElementById('menu-hero');
+    const parallaxLayers = [
+        { el: document.getElementById('menu-glow'), strength: 11 },
+        { el: document.getElementById('menu-logo'), strength: 15 },
+        { el: document.getElementById('menu-hero'), strength: 28 },
+        { el: document.getElementById('obj-cig'), strength: 35, driftX: 0.32, driftY: 0.20, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 1.2, rotSpeed: 0.00055, rotPhase: 0.4 },
+        { el: document.getElementById('obj-leaf'), strength: 38, driftX: -0.26, driftY: 0.30, speedX: 0.00031, speedY: 0.00046, phase: 1.2, rotAmp: 3.8, rotSpeed: 0.00072, rotPhase: 1.1, clockwisePush: 0.14 },
+        { el: document.getElementById('obj-star'), strength: 44, driftX: 0.36, driftY: -0.28, speedX: 0.00053, speedY: 0.00034, phase: 2.1, rotAmp: 4.6, rotSpeed: 0.00084, rotPhase: 2.0, clockwisePush: 0.18 },
+        { el: document.getElementById('obj-dgm'), strength: 32, driftX: -0.22, driftY: -0.24, speedX: 0.00039, speedY: 0.00051, phase: 2.7, rotAmp: 3.2, rotSpeed: 0.00066, rotPhase: 2.6 }
+    ].filter((layer) => !!layer.el);
+
+    let pointerX = 0;
+    let pointerY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let hasPointerInput = false;
+    let lastInputAt = 0;
+    const IDLE_DELAY_MS = 1200;
+    const IDLE_DRIFT_AMPLITUDE = 0.55;
+
+    const setParallaxPointer = (clientX, clientY) => {
+        pointerX = Math.max(-1, Math.min(1, (clientX / window.innerWidth - 0.5) * 2));
+        pointerY = Math.max(-1, Math.min(1, (clientY / window.innerHeight - 0.5) * 2));
+        hasPointerInput = true;
+        lastInputAt = performance.now();
+    };
+
+    const resetMenuParallax = () => {
+        hasPointerInput = false;
+        pointerX = 0;
+        pointerY = 0;
+    };
+
+    const animateMenuParallax = () => {
+        const now = performance.now();
+        const isIdle = !hasPointerInput || (now - lastInputAt > IDLE_DELAY_MS);
+
+        let targetX = pointerX;
+        let targetY = pointerY;
+
+        if (isIdle) {
+            targetX = Math.sin(now * 0.00033) * IDLE_DRIFT_AMPLITUDE;
+            targetY = Math.cos(now * 0.00027) * IDLE_DRIFT_AMPLITUDE;
+        }
+
+        currentX += (targetX - currentX) * 0.085;
+        currentY += (targetY - currentY) * 0.085;
+
+        if (menuOverlayEl && menuOverlayEl.style.display !== 'none') {
+            parallaxLayers.forEach(({ el, strength, driftX = 0, driftY = 0, speedX = 0, speedY = 0, phase = 0, rotAmp = 0, rotSpeed = 0, rotPhase = 0, clockwisePush = 0 }) => {
+                const layerDriftX = driftX ? Math.sin(now * speedX + phase) * driftX : 0;
+                const layerDriftY = driftY ? Math.cos(now * speedY + phase) * driftY : 0;
+                const rotWave = rotAmp ? Math.sin(now * rotSpeed + rotPhase) : 0;
+                const outwardBoost = rotWave > 0 ? (rotWave * clockwisePush) : 0;
+                const tx = (-(currentX + layerDriftX) * strength * (1 + outwardBoost)).toFixed(2);
+                const ty = (-(currentY + layerDriftY) * strength * (1 + outwardBoost)).toFixed(2);
+                el.style.translate = `${tx}px ${ty}px`;
+                if (rotAmp) {
+                    const rot = rotWave * rotAmp;
+                    el.style.rotate = `${rot.toFixed(3)}deg`;
+                }
+            });
+
+            if (menuHeroEl) {
+                const heroPulseScale = 1 + Math.sin(now * 0.00115) * 0.028;
+                menuHeroEl.style.scale = heroPulseScale.toFixed(4);
+            }
+        }
+
+        requestAnimationFrame(animateMenuParallax);
+    };
+
+    window.addEventListener('touchmove', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        setParallaxPointer(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    window.addEventListener('touchend', resetMenuParallax, { passive: true });
+    animateMenuParallax();
 });
 
 // Блокируем double-tap zoom на мобильных, не трогая масштаб всей страницы.
@@ -1263,8 +1343,36 @@ function fireBullet(isSuper = false) { if (!isSuper) updateAmmo(ammo - 1); sound
 function addEnemyKill() { enemiesDefeated++; sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); if (!hero.grounded) { airKills++; if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); sounds.ammo.currentTime = 0; sounds.ammo.play(); } } enemiesEl.innerText = enemiesDefeated; if (enemiesDefeated > 0 && enemiesDefeated % 10 === 0) { triggerBonusPulse(killedWrapper); updateAmmo(ammo + 5); sounds.cool.currentTime = 0; sounds.cool.play(); } }
 function takeDamage(amount) { if (invulFrames > 0 || boostTimer > 0 || shieldTimer > 0 || isGameOver || gameSpeed > baseSpeed + 2) return; if (!cheatLife) { hp = Math.max(0, hp - amount); updateHPBar(); } invulFrames = 60; shakeTime = 20; if (hp <= 0) { createExplosion(hero.x + hero.w/2, hero.y + hero.h/2, 50, WHITE); triggerGameOver(); } }
 function updateHPBar() { hpBar.style.width = hp + '%'; }
-function createExplosion(x, y, count = 20, color = WHITE, type = 'square') { let isSunRay = type === 'sun_rays', scatter = isSunRay ? 12 : 25; for(let i=0; i<count; i++) { if (particles.length > 300) break; let angle = isSunRay ? (i / count) * Math.PI * 2 : 0, speed = isSunRay ? 3 + Math.random() * 4 : 0; particles.push({ x, y, vx: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter, vy: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter, life: isSunRay ? 0.6 : 1.0, s: isSunRay ? 0 : Math.random()*5+2, angle: angle, color: color, type: type }); } }
+function createExplosion(x, y, count = 20, color = WHITE, type = 'square') {
+    let isSunRay = type === 'sun_rays';
+    let isShard = type === 'shard';
+    let scatter = isSunRay ? 12 : (isShard ? 18 : 25);
+    for(let i=0; i<count; i++) {
+        if (particles.length > 300) break;
+        let angle = isSunRay ? (i / count) * Math.PI * 2 : 0;
+        let speed = isSunRay ? 3 + Math.random() * 4 : 0;
+        particles.push({
+            x,
+            y,
+            vx: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter,
+            vy: isSunRay ? Math.cos(angle) * speed : (Math.random()-0.5) * scatter,
+            life: isSunRay ? 0.6 : (isShard ? 0.7 : 1.0),
+            s: isSunRay ? 0 : (isShard ? (Math.random() * 3 + 2) : (Math.random()*5+2)),
+            angle: angle,
+            color: color,
+            type: type
+        });
+    }
+}
 function createParticleTail(x, y) { if (particles.length > 400) return; const r = Math.random(); let c = r<0.2?'#8A2BE2':r<0.4?'#DDA0DD':WHITE; particles.push({ x, y, vx: -Math.random()*15-5, vy: (Math.random()-0.5)*6, life: 1, s: Math.random()*7+3, color: c, type: 'star' }); }
+function spawnEnemyShards(enemy, groundY) {
+    const enemyW = enemy.currentDrawW || enemy.w || 60;
+    const enemyCenterX = enemy.x + enemyW / 2;
+    const enemyCenterY = enemy.type === 'flyer'
+        ? (enemy.currentY || enemy.baseY || (groundY - enemy.h)) + enemy.h / 2
+        : groundY - enemy.h / 2;
+    createExplosion(enemyCenterX, enemyCenterY, 20, WHITE, 'shard');
+}
 
 function spawnObstacle() {
     let currentX = distance * 15; 
@@ -1310,7 +1418,7 @@ function render(currentTime) {
             let it = (o.type === 'zombie') ? (gy - o.h) : (o.type === 'flyer' ? o.currentY : gy - (o.currentDrawH || 60) - o.offY), tw = o.currentDrawW || o.w || 60, th = o.currentDrawH || o.h || 60; 
             if (hero.x < o.x + tw - 20 && hero.x + hero.w > o.x + 20 && hero.y < it + th && hero.y + hero.h > it) { 
                 if(['ammo','life','boost','superShot','shield','ice'].includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){boostTimer=350;sounds.boost.play();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} }
-                else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; addEnemyKill(); if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && boostTimer <= 0 && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
+                else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; spawnEnemyShards(o, gy); addEnemyKill(); if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && boostTimer <= 0 && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             } 
         }
     });
@@ -1321,19 +1429,26 @@ function render(currentTime) {
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
 
-        if (p.type === 'star') {
+        if (p.type === 'star' || p.type === 'shard') {
             const sz = p.s;
             const px = p.x;
             const py = p.y + fcy;
             ctx.beginPath();
-            ctx.moveTo(px, py - sz * 1.5);
-            ctx.lineTo(px + sz * 0.4, py - sz * 0.4);
-            ctx.lineTo(px + sz * 1.5, py);
-            ctx.lineTo(px + sz * 0.4, py + sz * 0.4);
-            ctx.lineTo(px, py + sz * 1.5);
-            ctx.lineTo(px - sz * 0.4, py + sz * 0.4);
-            ctx.lineTo(px - sz * 1.5, py);
-            ctx.lineTo(px - sz * 0.4, py - sz * 0.4);
+            if (p.type === 'shard') {
+                ctx.moveTo(px, py - sz * 1.1);
+                ctx.lineTo(px + sz * 0.45, py + sz * 0.2);
+                ctx.lineTo(px, py + sz * 1.1);
+                ctx.lineTo(px - sz * 0.45, py + sz * 0.2);
+            } else {
+                ctx.moveTo(px, py - sz * 1.5);
+                ctx.lineTo(px + sz * 0.4, py - sz * 0.4);
+                ctx.lineTo(px + sz * 1.5, py);
+                ctx.lineTo(px + sz * 0.4, py + sz * 0.4);
+                ctx.lineTo(px, py + sz * 1.5);
+                ctx.lineTo(px - sz * 0.4, py + sz * 0.4);
+                ctx.lineTo(px - sz * 1.5, py);
+                ctx.lineTo(px - sz * 0.4, py - sz * 0.4);
+            }
             ctx.closePath();
             ctx.fill();
         } else {
@@ -1344,7 +1459,7 @@ function render(currentTime) {
         return p.life > 0;
     });
     if (!isGameOver || hp > 0) { hero.update(ts); hero.draw(fcy); }
-    bullets = bullets.filter(b => { b.x += 28 * ts; let tH = 12, tW = (cigImg.width / cigImg.height) * tH; ctx.drawImage(cigImg, b.x, b.y + fcy - tH/2 + 8, tW, tH); obstacles.forEach(o => { if ((o.type === 'zombie' || o.type === 'flyer') && !o.hit) { let it = (o.type === 'flyer' ? o.currentY : gy - o.h), tw = o.currentDrawW || o.w; if (b.x > o.x && b.x < o.x+tw && b.y + fcy > it + fcy && b.y + fcy < it+o.h + fcy) { o.hit = true; addEnemyKill(); b.hit = true; } } }); return b.x < canvas.width && !b.hit; });
+    bullets = bullets.filter(b => { b.x += 28 * ts; let tH = 12, tW = (cigImg.width / cigImg.height) * tH; ctx.drawImage(cigImg, b.x, b.y + fcy - tH/2 + 8, tW, tH); obstacles.forEach(o => { if ((o.type === 'zombie' || o.type === 'flyer') && !o.hit) { let it = (o.type === 'flyer' ? o.currentY : gy - o.h), tw = o.currentDrawW || o.w; if (b.x > o.x && b.x < o.x+tw && b.y + fcy > it + fcy && b.y + fcy < it+o.h + fcy) { o.hit = true; spawnEnemyShards(o, gy); addEnemyKill(); b.hit = true; } } }); return b.x < canvas.width && !b.hit; });
     if (isGameOver) {
         gameOverTimer--;
         if (gameOverTimer < 90) {
