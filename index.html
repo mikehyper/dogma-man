@@ -1100,26 +1100,33 @@ const controlsText = document.getElementById('controls-text'), hpBar = document.
 const leaderboardBtn = document.getElementById('global-leaderboard-btn');
 
 let enemiesDefeated = 0, ammo = 20, hp = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
-let nextIceCheckpointKm = 30;
+let nextIceCheckpointKm = 25;
 let iceReadyForCurrentCheckpoint = false;
+let lastIcePickupKm = -999; // чтобы pity активировался после длительного отсутствия
 let isLeaderboardPulseSynced = false;
 const MOBILE_WORLD_BASE_WIDTH = 980;
-const ICE_HIGH_SPEED_THRESHOLD = 55;
+const ICE_HIGH_SPEED_THRESHOLD = 52;
+const ICE_PITY_DISTANCE_KM = 30; // если ice не подбирали долго - делаем появление чуть проще
 
 function getIceSpawnRatio(checkpointKm) {
     return checkpointKm === 30 ? 0.65 : 0.70;
 }
 
-function getIceAccessibleOffset() {
-    const nearGround = Math.random() < 0.6;
-    if (nearGround) return 35 + Math.random() * 70;   // near ground
-    return 140 + Math.random() * 120;                 // around single jump height
+function getIceAccessibleOffset(forceNearGround = false) {
+    const nearGround = forceNearGround || (Math.random() < 0.7);
+    if (nearGround) return 25 + Math.random() * 75;   // near ground
+    return 130 + Math.random() * 100;                 // around single jump height
 }
 
 function tryGetIceSpawnConfig() {
-    if (baseSpeed < ICE_HIGH_SPEED_THRESHOLD) return null;
-
     const currentKm = distance / 1000;
+    const kmSinceIce = currentKm - lastIcePickupKm;
+    const isPityMode = lastIcePickupKm < 0 || kmSinceIce >= ICE_PITY_DISTANCE_KM;
+
+    // В pity-режиме чуть снижаем порог скорости, а также гарантируем более "удобную" высоту.
+    const speedThreshold = isPityMode ? Math.max(40, ICE_HIGH_SPEED_THRESHOLD - 5) : ICE_HIGH_SPEED_THRESHOLD;
+    if (baseSpeed < speedThreshold) return null;
+
     if (currentKm < nextIceCheckpointKm) return null;
 
     if (!iceReadyForCurrentCheckpoint) iceReadyForCurrentCheckpoint = true;
@@ -1127,10 +1134,11 @@ function tryGetIceSpawnConfig() {
     const spawnRatio = getIceSpawnRatio(nextIceCheckpointKm);
     const config = {
         x: canvas.width * spawnRatio,
-        offY: getIceAccessibleOffset()
+        offY: getIceAccessibleOffset(isPityMode)
     };
 
-    nextIceCheckpointKm += 10;
+    // В pity-режиме следующая попытка чуть ближе, но не сразу "каждые 5 секунд".
+    nextIceCheckpointKm += isPityMode ? 7 : 10;
     iceReadyForCurrentCheckpoint = false;
     return config;
 }
@@ -1301,7 +1309,7 @@ function render(currentTime) {
         if (!isGameOver) { 
             let it = (o.type === 'zombie') ? (gy - o.h) : (o.type === 'flyer' ? o.currentY : gy - (o.currentDrawH || 60) - o.offY), tw = o.currentDrawW || o.w || 60, th = o.currentDrawH || o.h || 60; 
             if (hero.x < o.x + tw - 20 && hero.x + hero.w > o.x + 20 && hero.y < it + th && hero.y + hero.h > it) { 
-                if(['ammo','life','boost','superShot','shield','ice'].includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){boostTimer=350;sounds.boost.play();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){targetBaseSpeed=baseSpeed*0.6;isBraking=true;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} }
+                if(['ammo','life','boost','superShot','shield','ice'].includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){boostTimer=350;sounds.boost.play();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} }
                 else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; addEnemyKill(); if (shieldTimer > 0 || boostTimer > 0 || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && boostTimer <= 0 && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             } 
         }
@@ -1376,7 +1384,7 @@ function start() {
     isLeaderboardPulseSynced = false;
     sounds.bg.pause(); if (!isMobileDevice) currentTrack.volume = 0.3; currentTrack.currentTime = 0; currentTrack.play(); 
     menuOverlay.style.opacity = 0; setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200); 
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; nextIceCheckpointKm = 25; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
 }
 
