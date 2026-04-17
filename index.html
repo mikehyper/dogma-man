@@ -1155,10 +1155,10 @@ window.addEventListener('DOMContentLoaded', () => {
         { el: document.getElementById('menu-glow'), strength: 11 },
         { el: document.getElementById('menu-logo'), strength: 15 },
         { el: document.getElementById('menu-hero'), strength: 28 },
-        { el: document.getElementById('obj-cig'), strength: 28, driftX: 0.22, driftY: 0.14, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 0.8, rotSpeed: 0.00055, rotPhase: 0.4 },
-        { el: document.getElementById('obj-leaf'), strength: 30, driftX: -0.18, driftY: 0.21, speedX: 0.00031, speedY: 0.00046, phase: 1.2, rotAmp: 2.6, rotSpeed: 0.00072, rotPhase: 1.1, clockwisePush: 0.10 },
-        { el: document.getElementById('obj-star'), strength: 34, driftX: 0.25, driftY: -0.19, speedX: 0.00053, speedY: 0.00034, phase: 2.1, rotAmp: 3.1, rotSpeed: 0.00084, rotPhase: 2.0, clockwisePush: 0.12 },
-        { el: document.getElementById('obj-dgm'), strength: 25, driftX: -0.15, driftY: -0.17, speedX: 0.00039, speedY: 0.00051, phase: 2.7, rotAmp: 2.2, rotSpeed: 0.00066, rotPhase: 2.6 }
+        { el: document.getElementById('obj-cig'), strength: 28, driftX: 0.22, driftY: 0.14, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 0.8, rotSpeed: 0.00055, rotPhase: 0.4, pulseAmp: 0.012, pulseSpeed: 0.00110, pulsePhase: 0.2 },
+        { el: document.getElementById('obj-leaf'), strength: 30, driftX: -0.18, driftY: 0.21, speedX: 0.00031, speedY: 0.00046, phase: 1.2, rotAmp: 2.6, rotSpeed: 0.00072, rotPhase: 1.1, clockwisePush: 0.10, pulseAmp: 0.028, pulseSpeed: 0.00105, pulsePhase: 1.1 },
+        { el: document.getElementById('obj-star'), strength: 34, driftX: 0.25, driftY: -0.19, speedX: 0.00053, speedY: 0.00034, phase: 2.1, rotAmp: 3.1, rotSpeed: 0.00084, rotPhase: 2.0, clockwisePush: 0.12, pulseAmp: 0.045, pulseSpeed: 0.00122, pulsePhase: 2.0 },
+        { el: document.getElementById('obj-dgm'), strength: 25, driftX: -0.15, driftY: -0.17, speedX: 0.00039, speedY: 0.00051, phase: 2.7, rotAmp: 2.2, rotSpeed: 0.00066, rotPhase: 2.6, pulseAmp: 0.024, pulseSpeed: 0.00098, pulsePhase: 2.7 }
     ].filter((layer) => !!layer.el);
 
     let pointerX = 0;
@@ -1199,7 +1199,7 @@ window.addEventListener('DOMContentLoaded', () => {
         currentY += (targetY - currentY) * 0.085;
 
         if (menuOverlayEl && menuOverlayEl.style.display !== 'none') {
-            parallaxLayers.forEach(({ el, strength, driftX = 0, driftY = 0, speedX = 0, speedY = 0, phase = 0, rotAmp = 0, rotSpeed = 0, rotPhase = 0, clockwisePush = 0 }) => {
+            parallaxLayers.forEach(({ el, strength, driftX = 0, driftY = 0, speedX = 0, speedY = 0, phase = 0, rotAmp = 0, rotSpeed = 0, rotPhase = 0, clockwisePush = 0, pulseAmp = 0, pulseSpeed = 0, pulsePhase = 0 }) => {
                 const layerDriftX = driftX ? Math.sin(now * speedX + phase) * driftX : 0;
                 const layerDriftY = driftY ? Math.cos(now * speedY + phase) * driftY : 0;
                 const rotWave = rotAmp ? Math.sin(now * rotSpeed + rotPhase) : 0;
@@ -1210,6 +1210,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (rotAmp) {
                     const rot = rotWave * rotAmp;
                     el.style.rotate = `${rot.toFixed(3)}deg`;
+                }
+                if (pulseAmp) {
+                    const pulseScale = 1 + Math.sin(now * pulseSpeed + pulsePhase) * pulseAmp;
+                    el.style.scale = pulseScale.toFixed(4);
                 }
             });
 
