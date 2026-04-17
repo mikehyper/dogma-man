@@ -69,15 +69,55 @@
 
         /* --- AUTH STYLES --- */
         #auth-top-layer {
-            position: absolute; top: 20px; left: 0; width: 100%;
-            padding: 0 15px;
-            display: flex; justify-content: space-between; align-items: flex-start;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            padding: 0;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
             z-index: 300; pointer-events: auto;
             box-sizing: border-box;
-            transform-origin: top left;
+            transform-origin: top right;
         }
 
         .auth-btn-group { display: flex; gap: 10px; flex-wrap: nowrap; justify-content: flex-start; }
+        #user-group {
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        #user-group .icon-btn {
+            align-self: flex-end;
+        }
+
+        #dgm-top-logo-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 110px;
+            height: 110px;
+            z-index: 410;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(1);
+            transition: transform 0.22s ease, filter 0.22s ease;
+            filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+            pointer-events: auto;
+            animation: winnerPulse 2s infinite ease-in-out;
+        }
+        #dgm-top-logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        #dgm-top-logo-link:hover {
+            transform: scale(1.12);
+            filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.7));
+        }
 
         .dogma-btn {
             background: #ffc240;
@@ -267,9 +307,24 @@
         @keyframes popInStar { 0% { transform: translate(-283px, 51px) scale(0); } 70% { transform: translate(-283px, 51px) scale(1.1); } 100% { transform: translate(-283px, 51px) scale(1); } }
         @keyframes popInDgm { 0% { transform: translate(-305px, -184px) scale(0); } 70% { transform: translate(-305px, -184px) scale(1.1); } 100% { transform: translate(-305px, -184px) scale(1); } }
         @keyframes popInGlow { 0% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0); } 70% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); } 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); } }
-        #menu-logo { width: 700px; height: auto; z-index: 12; margin-bottom: -90px; margin-left: 50px; position: relative; transform: scale(0); animation: popInCenter 0.5s 0.1s cubic-bezier(0.17, 0.67, 0.83, 1) forwards; }
+        #menu-logo-wrap {
+            width: 700px;
+            margin-bottom: -90px;
+            margin-left: 50px;
+            position: relative;
+            z-index: 12;
+            transform: scale(0);
+            animation: popInCenter 0.5s 0.1s cubic-bezier(0.17, 0.67, 0.83, 1) forwards;
+        }
+        #menu-logo {
+            width: 100%;
+            height: auto;
+            position: relative;
+            z-index: 12;
+            display: block;
+        }
         #menu-hero { width: 450px; height: auto; z-index: 15; position: relative; margin-top: 20px; margin-left: -50px; transform: scale(0); animation: popInCenter 0.5s 0.3s cubic-bezier(0.17, 0.67, 0.83, 1) forwards; }
-        #menu-logo, #menu-hero, #menu-glow, #obj-cig, #obj-leaf, #obj-star, #obj-dgm { will-change: translate; }
+        #menu-logo-wrap, #menu-logo, #menu-hero, #menu-glow, #menu-logo-pulse, #obj-cig, #obj-leaf, #obj-star, #obj-dgm { will-change: translate; }
         
         #menu-glow { 
             position: absolute; 
@@ -281,6 +336,22 @@
             pointer-events: none; 
             opacity: 0.78; 
             animation: popInGlow 0.6s 0.2s forwards, pulseGlow 2s 0.8s infinite ease-in-out; 
+        }
+        #menu-logo-pulse {
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            width: 760px;
+            height: 320px;
+            z-index: 11;
+            pointer-events: none;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(255, 251, 224, 0.88) 0%, rgba(255, 225, 141, 0.62) 24%, rgba(255, 199, 72, 0.3) 52%, rgba(255, 194, 64, 0.05) 74%, rgba(255, 194, 64, 0) 100%);
+            filter: blur(6px);
+            box-shadow: 0 0 56px rgba(255, 224, 128, 0.34);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            animation: popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow 2.8s 0.8s infinite cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
         .decor-obj { position: absolute; z-index: 100; pointer-events: none; height: auto; }
@@ -295,6 +366,25 @@
         @keyframes pulseGlow { 
             0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: 0.58; } 
             50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: 0.87; } 
+        }
+        @keyframes pulseLogoGlow {
+            0% {
+                transform: translate(-50%, -50%) scale(0.88);
+                opacity: 0.78;
+            }
+            58% {
+                transform: translate(-50%, -50%) scale(1.36);
+                opacity: 0.38;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1.52);
+                opacity: 0.14;
+            }
+        }
+        @keyframes popInLogoPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            70% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.75; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.55; }
         }
         
         .menu-score-text { 
@@ -363,7 +453,17 @@
             #global-leaderboard-btn { width: 70px; height: 70px; bottom: 20px; right: 20px; }
             .modal-close { top: 5px; right: 5px; }
             .score-header-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-            #auth-top-layer { top: 10px; padding: 0 10px; }
+            #auth-top-layer {
+                top: 10px;
+                right: 10px;
+                padding: 0;
+            }
+            #dgm-top-logo-link {
+                top: 12px;
+                left: 12px;
+                width: 88px;
+                height: 88px;
+            }
             .mobile-screen { padding: 12px; }
             .mobile-screen .modal-box {
                 width: min(94vw, 460px);
@@ -380,20 +480,23 @@
     <div id="hp-container"><div id="hp-bar"></div></div>
     
     <div id="menu-overlay">
+        <a id="dgm-top-logo-link" href="https://t.me/dogmatbc" target="_blank" rel="noopener noreferrer">
+            <img src="img/dgm_logo.png" alt="DGM logo">
+        </a>
         <div id="auth-top-layer">
             <div id="guest-group" class="auth-btn-group">
                 <button class="dogma-btn" onclick="openModal('reg-modal')">РЕГИСТРАЦИЯ</button>
                 <button class="dogma-btn" onclick="openModal('login-modal')">ВХОД</button>
             </div>
             <div id="user-group" class="auth-btn-group" style="display: none;">
-                <button class="dogma-btn icon-btn" onclick="logout()">
-                    <img src="img/logout.png" alt="Logout">
-                </button>
                 <button class="dogma-btn user-nick-btn" onclick="openScoreboard(true)">
                     <img src="img/win.png" alt="Win">
                     <div class="user-nick-text-clip">
                         <span id="display-nickname">ГОСТЬ</span>
                     </div>
+                </button>
+                <button class="dogma-btn icon-btn" onclick="logout()">
+                    <img src="img/logout.png" alt="Logout">
                 </button>
             </div>
         </div>
@@ -407,7 +510,10 @@
         <div class="menu-vignette"></div>
         <div class="menu-composition" id="menu-comp">
             <img id="menu-glow" src="img/glow.png">
-            <img id="menu-logo" src="img/logo.png">
+            <div id="menu-logo-wrap">
+                <div id="menu-logo-pulse"></div>
+                <img id="menu-logo" src="img/logo.png">
+            </div>
             <img id="menu-hero" src="img/hero_menu.png">
             <img id="obj-cig" class="decor-obj" src="img/cig_main.png">
             <img id="obj-leaf" class="decor-obj" src="img/leaf_main.png">
@@ -1049,10 +1155,10 @@ window.addEventListener('DOMContentLoaded', () => {
         { el: document.getElementById('menu-glow'), strength: 11 },
         { el: document.getElementById('menu-logo'), strength: 15 },
         { el: document.getElementById('menu-hero'), strength: 28 },
-        { el: document.getElementById('obj-cig'), strength: 35, driftX: 0.32, driftY: 0.20, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 1.2, rotSpeed: 0.00055, rotPhase: 0.4 },
-        { el: document.getElementById('obj-leaf'), strength: 38, driftX: -0.26, driftY: 0.30, speedX: 0.00031, speedY: 0.00046, phase: 1.2, rotAmp: 3.8, rotSpeed: 0.00072, rotPhase: 1.1, clockwisePush: 0.14 },
-        { el: document.getElementById('obj-star'), strength: 44, driftX: 0.36, driftY: -0.28, speedX: 0.00053, speedY: 0.00034, phase: 2.1, rotAmp: 4.6, rotSpeed: 0.00084, rotPhase: 2.0, clockwisePush: 0.18 },
-        { el: document.getElementById('obj-dgm'), strength: 32, driftX: -0.22, driftY: -0.24, speedX: 0.00039, speedY: 0.00051, phase: 2.7, rotAmp: 3.2, rotSpeed: 0.00066, rotPhase: 2.6 }
+        { el: document.getElementById('obj-cig'), strength: 28, driftX: 0.22, driftY: 0.14, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 0.8, rotSpeed: 0.00055, rotPhase: 0.4 },
+        { el: document.getElementById('obj-leaf'), strength: 30, driftX: -0.18, driftY: 0.21, speedX: 0.00031, speedY: 0.00046, phase: 1.2, rotAmp: 2.6, rotSpeed: 0.00072, rotPhase: 1.1, clockwisePush: 0.10 },
+        { el: document.getElementById('obj-star'), strength: 34, driftX: 0.25, driftY: -0.19, speedX: 0.00053, speedY: 0.00034, phase: 2.1, rotAmp: 3.1, rotSpeed: 0.00084, rotPhase: 2.0, clockwisePush: 0.12 },
+        { el: document.getElementById('obj-dgm'), strength: 25, driftX: -0.15, driftY: -0.17, speedX: 0.00039, speedY: 0.00051, phase: 2.7, rotAmp: 2.2, rotSpeed: 0.00066, rotPhase: 2.6 }
     ].filter((layer) => !!layer.el);
 
     let pointerX = 0;
@@ -1256,16 +1362,31 @@ function restartLeaderboardPulse() {
 window.addEventListener('resize', resize); resize();
 const getGroundY = () => (canvas.height * 0.75) | 0;
 
-let stars = []; for (let i = 0; i < 120; i++) { stars.push({ x: Math.random() * canvas.width - canvas.width / 2, y: Math.random() * canvas.height - canvas.height / 2, z: Math.random() * canvas.width }); }
+let stars = [];
+for (let i = 0; i < 120; i++) {
+    stars.push({
+        x: Math.random() * canvas.width - canvas.width / 2,
+        y: Math.random() * canvas.height - canvas.height / 2,
+        z: Math.random() * canvas.width,
+        isPurple: Math.random() < 0.06
+    });
+}
 
 function updateStars() { 
     if (menuOverlay.style.display !== 'none') { 
         sCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height); 
-        const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2; sCtx.fillStyle = "rgba(255, 245, 180, 0.9)"; 
+        const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2;
         for (let s of stars) { 
-            s.z += 6; if (s.z >= starsCanvas.width) { s.z = 1; s.x = Math.random() * starsCanvas.width - cx; s.y = Math.random() * starsCanvas.height - cy; } 
+            s.z += 6;
+            if (s.z >= starsCanvas.width) {
+                s.z = 1;
+                s.x = Math.random() * starsCanvas.width - cx;
+                s.y = Math.random() * starsCanvas.height - cy;
+                s.isPurple = Math.random() < 0.06;
+            } 
             const px = cx + (s.x / s.z) * starsCanvas.width, py = cy + (s.y / s.z) * starsCanvas.height, progress = (1 - s.z / starsCanvas.width), size = Math.max(0.1, progress * 14); 
             if (px > 0 && px < starsCanvas.width && py > 0 && py < starsCanvas.height) {
+                sCtx.fillStyle = s.isPurple ? "rgba(196, 156, 255, 0.9)" : "rgba(255, 245, 180, 0.9)";
                 sCtx.beginPath(); sCtx.moveTo(px, py - size * 1.8); sCtx.lineTo(px + size * 0.6, py - size * 0.6); sCtx.lineTo(px + size * 1.8, py); sCtx.lineTo(px + size * 0.6, py + size * 0.6); sCtx.lineTo(px, py + size * 1.8); sCtx.lineTo(px - size * 0.6, py + size * 0.6); sCtx.lineTo(px - size * 1.8, py); sCtx.lineTo(px - size * 0.6, py - size * 0.6); sCtx.closePath(); sCtx.fill(); 
             }
         } 
@@ -1402,7 +1523,9 @@ function render(currentTime) {
         let tCY = 0; if (hero.y < canvas.height * 0.4) tCY = (canvas.height * 0.4) - hero.y; cameraScrollY += (tCY - cameraScrollY) * 0.1 * ts; spawnObstacle();
     } else cameraScrollY *= (1 - 0.05 * ts);
     const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0); if (shakeTime > 0) shakeTime--;
-    let skyL = Math.min(1, Math.max(0, cameraScrollY / 2000)); ctx.fillStyle = `rgb(${255-skyL*200}, ${194-skyL*180}, ${64-skyL*60})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let skyL = Math.min(1, Math.max(0, cameraScrollY / 2000));
+    ctx.fillStyle = `rgb(${255-skyL*200}, ${194-skyL*180}, ${64-skyL*60})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (cameraScrollY > 400) { let gSO = Math.min(1, (cameraScrollY - 400) / 1200); ctx.save(); gameStars.forEach(s => { if (s.isBlinking) { s.opacity += s.blinkSpeed; if (s.opacity > 1 || s.opacity < 0.2) s.blinkSpeed *= -1; } ctx.globalAlpha = gSO * (s.isBlinking ? s.opacity : 0.8); ctx.fillStyle = WHITE; const px = s.x * canvas.width, py = s.y * canvas.height, sz = s.size; ctx.beginPath(); ctx.moveTo(px, py - sz * 1.5); ctx.lineTo(px + sz * 0.4, py - sz * 0.4); ctx.lineTo(px + sz * 1.5, py); ctx.lineTo(px + sz * 0.4, py + sz * 0.4); ctx.lineTo(px, py + sz * 1.5); ctx.lineTo(px - sz * 0.4, py + sz * 0.4); ctx.lineTo(px - sz * 1.5, py); ctx.lineTo(px - sz * 0.4, py - sz * 0.4); ctx.closePath(); ctx.fill(); }); ctx.restore(); }
     drawCloudsLayer(cloudsData, distance * 2.2, fcy * 0.45); drawCitylineLayer(city2Data, distance * 1.5, fcy * 0.3, DARK_YELLOW); drawMountainsLayer(backMountains, distance * 3.0, fcy * 0.5); drawCitylineLayer(city1Data, distance * 6.0, fcy * 0.65, CITY_BROWN); drawMountainsLayer(frontMountains, distance * 9.0, fcy * 0.8); drawStaticObjectsLayer(mtnObjData, distance * 9.0, fcy * 0.8);
     ctx.fillStyle = BLACK; ctx.fillRect(0, gy + fcy, canvas.width, canvas.height + 3500);
