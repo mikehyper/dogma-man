@@ -155,11 +155,13 @@
         .user-nick-btn { 
             gap: 4px; font-size: 28px; height: 54px; 
             box-sizing: border-box; animation-delay: 0.15s; 
-            width: auto; max-width: 246px; overflow: hidden; justify-content: flex-start;
+            width: auto; max-width: 246px; min-width: 0;
+            overflow: hidden; justify-content: flex-start;
             padding: 0 10px 0 8px;
         }
         .user-nick-text-clip {
             flex: 0 1 auto;
+            min-width: 0;
             overflow: hidden;
             max-width: 176px;
             mask-image: linear-gradient(to right, black 85%, transparent 100%);
@@ -1332,9 +1334,10 @@ function restartNicknameMarquee() {
     const clipEl = document.querySelector('.user-nick-text-clip');
     if (!nicknameEl || !clipEl) return;
 
-    requestAnimationFrame(() => {
-        const overflow = nicknameEl.scrollWidth - clipEl.clientWidth;
-        if (overflow <= 2) return;
+    const runMeasure = () => {
+        // scrollWidth клипа — надёжнее, чем span, после flex/reflow и загрузки шрифтов
+        const overflow = clipEl.scrollWidth - clipEl.clientWidth;
+        if (overflow <= 1) return;
 
         const maxShift = overflow + 8;
         let showStart = false;
@@ -1347,6 +1350,11 @@ function restartNicknameMarquee() {
             toggleShift();
             nickMarqueeInterval = setInterval(toggleShift, 3600);
         }, 1200);
+    };
+
+    // Два кадра: даём браузеру применить display:flex и шрифты перед измерением
+    requestAnimationFrame(() => {
+        requestAnimationFrame(runMeasure);
     });
 }
 
@@ -1930,8 +1938,9 @@ async function initFonts() {
         await document.fonts.ready;
         if (document.fonts.check('1em Pribambas')) {
             document.body.style.fontFamily = "'Pribambas', 'Impact', sans-serif";
-            adjustMenuScale();
         }
+        adjustMenuScale();
+        restartNicknameMarquee();
     } catch (err) {}
 }
 initFonts();
