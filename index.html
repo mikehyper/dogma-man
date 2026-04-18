@@ -304,6 +304,12 @@
         #scoreboard-box::-webkit-scrollbar { width: 12px; }
         #scoreboard-box::-webkit-scrollbar-track { background: #E0A11D; border-left: 4px solid #000; }
         #scoreboard-box::-webkit-scrollbar-thumb { background: #000; border: 2px solid #ffc240; }
+        #stats-box::-webkit-scrollbar,
+        #stats-box-mobile::-webkit-scrollbar { width: 12px; }
+        #stats-box::-webkit-scrollbar-track,
+        #stats-box-mobile::-webkit-scrollbar-track { background: #E0A11D; border-left: 4px solid #000; }
+        #stats-box::-webkit-scrollbar-thumb,
+        #stats-box-mobile::-webkit-scrollbar-thumb { background: #000; border: 2px solid #ffc240; }
 
         .modal-box h2 { margin: 0 0 10px 0; font-size: 42px; text-align: center; line-height: 1; color: #000; }
         .modal-box input {
@@ -341,6 +347,31 @@
         .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
         .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
         .current-user-row { background: rgba(255,255,255,0.4); font-weight: bold; }
+
+        .score-nav-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+            width: 100%;
+        }
+        .score-nav-buttons .dogma-btn {
+            flex: 1;
+            width: auto;
+        }
+
+        #stats-box {
+            max-width: 520px; width: 95%; max-height: 85vh; overflow-y: auto; padding-top: 44px;
+        }
+        .stats-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+        .js-stat-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            gap: 16px; padding: 10px 0; border-bottom: 2px solid #000;
+            font-size: 20px; line-height: 1.15; color: #000;
+        }
+        .js-stat-row:last-child { border-bottom: none; }
+        .stats-label { flex: 1; text-align: left; padding-right: 8px; }
+        .js-stat-val { flex-shrink: 0; font-weight: bold; text-align: right; min-width: 5ch; }
+        .stats-list > .js-stat-row:first-child .js-stat-val { font-size: 1.45em; }
 
         @keyframes popInCenter { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
         /* Отдельная анимация: translateZ поднимает слой текста над свечением (моб. WebKit). */
@@ -851,6 +882,7 @@
                 box-shadow: 5px 5px 0 #000;
             }
             .mobile-screen .modal-box h2 { font-size: 32px; }
+            .mobile-screen .js-stat-row { font-size: 15px; gap: 10px; padding: 8px 0; }
             #mobile-score-screen .score-table { font-size: 16px; }
             #top-info-text { font-size: 22px; }
             #menu-over-coins .coin-count-value {
@@ -926,28 +958,28 @@
             transition: border-color 0.14s ease, box-shadow 0.14s ease;
         }
         .mobile-touch-nav-zone--jump {
-            border: 3px solid rgba(255, 255, 255, 0.34);
+            border: 3px solid rgba(255, 255, 255, 0.2);
         }
         .mobile-touch-nav-zone--boost {
-            border: 3px solid rgba(157, 56, 206, 0.34);
+            border: 3px solid rgba(157, 56, 206, 0.2);
         }
         .mobile-touch-nav-zone--fire {
-            border: 3px solid rgba(255, 220, 46, 0.34);
+            border: 3px solid rgba(255, 220, 46, 0.2);
         }
         .mobile-touch-nav-zone--jump:active,
         .mobile-touch-nav-zone--jump.mobile-touch-nav-zone--pressed {
-            border-color: rgba(255, 255, 255, 0.72);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.38), 0 0 22px rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.52);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.24), 0 0 22px rgba(255, 255, 255, 0.1);
         }
         .mobile-touch-nav-zone--boost:active,
         .mobile-touch-nav-zone--boost.mobile-touch-nav-zone--pressed {
-            border-color: rgba(187, 95, 228, 0.85);
-            box-shadow: 0 0 10px rgba(157, 56, 206, 0.42), 0 0 24px rgba(157, 56, 206, 0.22);
+            border-color: rgba(187, 95, 228, 0.58);
+            box-shadow: 0 0 10px rgba(157, 56, 206, 0.26), 0 0 24px rgba(157, 56, 206, 0.12);
         }
         .mobile-touch-nav-zone--fire:active,
         .mobile-touch-nav-zone--fire.mobile-touch-nav-zone--pressed {
-            border-color: rgba(255, 230, 120, 0.95);
-            box-shadow: 0 0 10px rgba(255, 210, 55, 0.45), 0 0 22px rgba(255, 200, 40, 0.2);
+            border-color: rgba(255, 230, 120, 0.62);
+            box-shadow: 0 0 10px rgba(255, 210, 55, 0.28), 0 0 22px rgba(255, 200, 40, 0.12);
         }
         @media (max-width: 768px) and (orientation: landscape),
                (max-width: 768px) and (max-height: 480px) {
@@ -1018,7 +1050,7 @@
                 <button class="dogma-btn" onclick="openModal('login-modal')">ВХОД</button>
             </div>
             <div id="user-group" class="auth-btn-group" style="display: none;">
-                <button class="dogma-btn user-nick-btn" onclick="openScoreboard(true)">
+                <button type="button" class="dogma-btn user-nick-btn" onclick="openPlayerStats()">
                     <img src="img/win.png" alt="Win">
                     <div class="user-nick-text-clip">
                         <span id="display-nickname">ГОСТЬ</span>
@@ -1030,7 +1062,7 @@
             </div>
         </div>
 
-        <button id="global-leaderboard-btn" onclick="openScoreboard(false)">
+        <button id="global-leaderboard-btn" onclick="openScoreboard()">
             <img src="img/winner.png" alt="Leaderboard">
         </button>
 
@@ -1088,6 +1120,25 @@
         </div>
     </div>
 
+    <div id="stats-modal" class="modal-overlay">
+        <div class="modal-box" id="stats-box">
+            <button type="button" class="modal-close" onclick="closeModal('stats-modal')">×</button>
+            <h2>СТАТИСТИКА</h2>
+            <p id="stats-modal-nick" class="stats-nick-line" style="margin:0 0 12px 0;font-size:22px;text-align:center;color:#000;"></p>
+            <div class="stats-list">
+                <div class="js-stat-row" data-stat-key="bestKills"><span class="stats-label">ЛУЧШЕЕ УНИЧТОЖЕНИЕ</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="bestDistKm"><span class="stats-label">Рекорд дистанции</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="gamesPlayed"><span class="stats-label">Игр сыграно</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalKills"><span class="stats-label">Всего пришельцев убито</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalDistKm"><span class="stats-label">Всего километров пробежал</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="lifetimeCoins"><span class="stats-label">Монет собрано за всё время</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="bankCoins"><span class="stats-label">Монет в копилке сейчас</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalShots"><span class="stats-label">Выстрелов сделано</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalRevives"><span class="stats-label">Возрождений</span><span class="js-stat-val">0</span></div>
+            </div>
+        </div>
+    </div>
+
     <div id="score-modal" class="modal-overlay">
         <div class="modal-box" id="scoreboard-box">
             <button class="modal-close" onclick="closeModal('score-modal')">×</button>
@@ -1104,6 +1155,10 @@
                 </thead>
                 <tbody id="score-body"></tbody>
             </table>
+            <div class="score-nav-buttons">
+                <button type="button" class="dogma-btn" onclick="scrollScoreboardToMe()">Я</button>
+                <button type="button" class="dogma-btn" onclick="scrollScoreboardToTop()">ТОП</button>
+            </div>
         </div>
     </div>
 
@@ -1114,6 +1169,25 @@
             <input type="text" id="mobile-auth-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
             <input type="password" id="mobile-auth-pass" placeholder="ВАШ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="submitMobileAuth()">ОКЕЙ</button>
+        </div>
+    </div>
+
+    <div id="mobile-stats-screen" class="mobile-screen">
+        <div class="modal-box" id="stats-box-mobile">
+            <button type="button" class="modal-close" onclick="closeMobileScreen('mobile-stats-screen')">×</button>
+            <h2>СТАТИСТИКА</h2>
+            <p id="stats-mobile-nick" class="stats-nick-line" style="margin:0 0 12px 0;font-size:22px;text-align:center;color:#000;"></p>
+            <div class="stats-list">
+                <div class="js-stat-row" data-stat-key="bestKills"><span class="stats-label">ЛУЧШЕЕ УНИЧТОЖЕНИЕ</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="bestDistKm"><span class="stats-label">Рекорд дистанции</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="gamesPlayed"><span class="stats-label">Игр сыграно</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalKills"><span class="stats-label">Всего пришельцев убито</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalDistKm"><span class="stats-label">Всего километров пробежал</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="lifetimeCoins"><span class="stats-label">Монет собрано за всё время</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="bankCoins"><span class="stats-label">Монет в копилке сейчас</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalShots"><span class="stats-label">Выстрелов сделано</span><span class="js-stat-val">0</span></div>
+                <div class="js-stat-row" data-stat-key="totalRevives"><span class="stats-label">Возрождений</span><span class="js-stat-val">0</span></div>
+            </div>
         </div>
     </div>
 
@@ -1133,6 +1207,10 @@
                 </thead>
                 <tbody id="mobile-score-body"></tbody>
             </table>
+            <div class="score-nav-buttons">
+                <button type="button" class="dogma-btn" onclick="scrollScoreboardToMe()">Я</button>
+                <button type="button" class="dogma-btn" onclick="scrollScoreboardToTop()">ТОП</button>
+            </div>
         </div>
     </div>
 
@@ -1315,6 +1393,162 @@ function persistCurrentUser() {
     } catch (err) {}
 }
 
+function getLifetimeStatsStorageKey() {
+    if (currentUserUid) return 'dogma_lifetime_uid_' + currentUserUid;
+    if (currentUser) return 'dogma_lifetime_name_' + currentUser;
+    return null;
+}
+
+function loadLocalLifetimeStats() {
+    const d = {
+        gamesPlayed: 0,
+        totalKills: 0,
+        totalDistKm: 0,
+        lifetimeCoinsCollected: 0,
+        bestKills: 0,
+        bestDistKm: 0,
+        totalRevives: 0,
+        totalShots: 0,
+        totalIcePickups: 0
+    };
+    const key = getLifetimeStatsStorageKey();
+    if (!key) return d;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return d;
+        const o = JSON.parse(raw);
+        if (o && typeof o === 'object') {
+            if (o.gamesPlayed != null) d.gamesPlayed = Number(o.gamesPlayed) || 0;
+            if (o.totalKills != null) d.totalKills = Number(o.totalKills) || 0;
+            if (o.totalDistKm != null) d.totalDistKm = Number(o.totalDistKm) || 0;
+            if (o.lifetimeCoinsCollected != null) d.lifetimeCoinsCollected = Number(o.lifetimeCoinsCollected) || 0;
+            if (o.bestKills != null) d.bestKills = Number(o.bestKills) || 0;
+            if (o.bestDistKm != null) d.bestDistKm = Number(o.bestDistKm) || 0;
+            if (o.totalRevives != null) d.totalRevives = Number(o.totalRevives) || 0;
+            if (o.totalShots != null) d.totalShots = Number(o.totalShots) || 0;
+            if (o.totalIcePickups != null) d.totalIcePickups = Number(o.totalIcePickups) || 0;
+        }
+    } catch (err) {}
+    return d;
+}
+
+function saveLocalLifetimeStats(data) {
+    const key = getLifetimeStatsStorageKey();
+    if (!key) return;
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {}
+}
+
+function mergeLocalLifetimeAfterGameOver(run) {
+    const s = loadLocalLifetimeStats();
+    s.gamesPlayed = (s.gamesPlayed || 0) + 1;
+    s.totalKills = (s.totalKills || 0) + run.kills;
+    s.totalDistKm = Number(((s.totalDistKm || 0) + run.km).toFixed(6));
+    s.lifetimeCoinsCollected = (s.lifetimeCoinsCollected || 0) + run.coins;
+    s.bestKills = Math.max(s.bestKills || 0, run.kills);
+    s.bestDistKm = Math.max(s.bestDistKm || 0, run.km);
+    s.totalShots = (s.totalShots || 0) + run.shots;
+    s.totalIcePickups = (s.totalIcePickups || 0) + run.ice;
+    saveLocalLifetimeStats(s);
+}
+
+function mergeLocalReviveCount() {
+    const s = loadLocalLifetimeStats();
+    s.totalRevives = (s.totalRevives || 0) + 1;
+    saveLocalLifetimeStats(s);
+}
+
+function formatKmStat(km) {
+    const n = Number(km);
+    if (!Number.isFinite(n) || n <= 0) return '0 м';
+    if (n < 1) return Math.round(n * 1000) + ' м';
+    return n.toFixed(3) + ' км';
+}
+
+function fillStatRowsFromData(stats) {
+    const nick = (currentUser && String(currentUser).trim()) || '';
+    const nickLine = nick ? '@' + nick : '';
+    const nickDesktop = document.getElementById('stats-modal-nick');
+    const nickMobile = document.getElementById('stats-mobile-nick');
+    if (nickDesktop) nickDesktop.textContent = nickLine;
+    if (nickMobile) nickMobile.textContent = nickLine;
+
+    const map = {
+        bestKills: String(Math.max(0, stats.bestKills | 0)),
+        bestDistKm: formatKmStat(stats.bestDistKm),
+        gamesPlayed: String(Math.max(0, stats.gamesPlayed | 0)),
+        totalKills: String(Math.max(0, stats.totalKills | 0)),
+        totalDistKm: formatKmStat(stats.totalDistKm),
+        lifetimeCoins: String(Math.max(0, stats.lifetimeCoinsCollected | 0)),
+        bankCoins: String(Math.max(0, stats.bankCoins | 0)),
+        totalShots: String(Math.max(0, stats.totalShots | 0)),
+        totalRevives: String(Math.max(0, stats.totalRevives | 0))
+    };
+    document.querySelectorAll('.js-stat-row').forEach((row) => {
+        const key = row.getAttribute('data-stat-key');
+        const valEl = row.querySelector('.js-stat-val');
+        if (!key || !valEl) return;
+        valEl.textContent = map[key] != null ? map[key] : '—';
+    });
+}
+
+async function openPlayerStats() {
+    if (!currentUser) return;
+    let stats = loadLocalLifetimeStats();
+    stats.bankCoins = Math.max(0, totalCoinsAllTime | 0);
+
+    if (firebaseEnabled && currentUserUid && fbDb) {
+        try {
+            const snap = await fbDb.collection('players').doc(currentUserUid).get();
+            if (snap.exists) {
+                const d = snap.data();
+                const cGames = Number(d.gamesPlayed || 0);
+                const cKills = Number(d.totalKills || 0);
+                const cDist = Number(d.totalDistKm || 0);
+                const cCoins = Number(d.lifetimeCoinsCollected || 0);
+                const cBestK = Number(d.kills || 0);
+                const cBestD = Number(d.distKm || 0);
+                const cRev = Number(d.totalRevives || 0);
+                const cShot = Number(d.totalShots || 0);
+                const cIce = Number(d.totalIcePickups || 0);
+                stats.gamesPlayed = Math.max(stats.gamesPlayed || 0, cGames);
+                stats.totalKills = Math.max(stats.totalKills || 0, cKills);
+                stats.totalDistKm = Math.max(stats.totalDistKm || 0, cDist);
+                stats.lifetimeCoinsCollected = Math.max(stats.lifetimeCoinsCollected || 0, cCoins);
+                stats.bestKills = Math.max(stats.bestKills || 0, cBestK);
+                stats.bestDistKm = Math.max(stats.bestDistKm || 0, cBestD);
+                stats.totalRevives = Math.max(stats.totalRevives || 0, cRev);
+                stats.totalShots = Math.max(stats.totalShots || 0, cShot);
+                stats.totalIcePickups = Math.max(stats.totalIcePickups || 0, cIce);
+            }
+        } catch (err) {}
+    }
+
+    fillStatRowsFromData(stats);
+    if (isMobileDevice) {
+        const scr = document.getElementById('mobile-stats-screen');
+        if (scr) {
+            scr.style.display = 'flex';
+            isModalOpen = true;
+            adjustMenuScale();
+        }
+    } else {
+        openModal('stats-modal');
+    }
+}
+
+async function incrementLifetimeRevivesCloud() {
+    mergeLocalReviveCount();
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    try {
+        await fbDb.collection('players').doc(currentUserUid).set({
+            totalRevives: firebase.firestore.FieldValue.increment(1),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (err) {}
+}
+
 async function performAuth(type, name, pass) {
     name = normalizeTelegramUsername(name);
     if (!name || !pass) return false;
@@ -1392,19 +1626,33 @@ async function performAuth(type, name, pass) {
 }
 
 async function saveCurrentUserStats() {
-    if (!firebaseEnabled || !currentUserUid) return;
+    const runKm = Number((distance / 1000).toFixed(6));
+    const runKills = enemiesDefeated | 0;
+    const runCoins = coinsCollected | 0;
+    const runShots = shotsThisRun | 0;
+    const runIce = icePickupsThisRun | 0;
+
+    mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
+
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
     try {
         const docRef = fbDb.collection('players').doc(currentUserUid);
         const snap = await docRef.get();
         const prev = snap.exists ? snap.data() : {};
-        const nextKills = Math.max(prev.kills || 0, enemiesDefeated || 0);
-        const nextDist = Math.max(prev.distKm || 0, Number((distance / 1000).toFixed(3)));
+        const nextKills = Math.max(prev.kills || 0, runKills);
+        const nextDist = Math.max(prev.distKm || 0, runKm);
         await docRef.set({
             nickname: currentUser,
             nicknameUpper: (currentUser || 'ГОСТЬ').toUpperCase(),
             nicknameLower: (currentUser || 'ГОСТЬ').toLowerCase(),
             kills: nextKills,
             distKm: nextDist,
+            gamesPlayed: firebase.firestore.FieldValue.increment(1),
+            totalKills: firebase.firestore.FieldValue.increment(runKills),
+            totalDistKm: firebase.firestore.FieldValue.increment(runKm),
+            lifetimeCoinsCollected: firebase.firestore.FieldValue.increment(runCoins),
+            totalShots: firebase.firestore.FieldValue.increment(runShots),
+            totalIcePickups: firebase.firestore.FieldValue.increment(runIce),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
     } catch (err) {}
@@ -1471,7 +1719,37 @@ async function logout() {
     persistCurrentUser();
 }
 
-async function openScoreboard(focusCurrentUser = false) {
+function scrollScoreboardToTop() {
+    const desktopBox = document.getElementById('scoreboard-box');
+    const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
+    if (isMobileDevice) {
+        if (mobileBox) mobileBox.scrollTop = 0;
+    } else if (desktopBox) {
+        desktopBox.scrollTop = 0;
+    }
+}
+
+function focusScoreboardOnCurrentUser(instant) {
+    const behavior = instant ? 'auto' : 'smooth';
+    const desktopCurrent = document.querySelector('#score-body .current-user-row');
+    const mobileCurrent = document.querySelector('#mobile-score-body .current-user-row');
+    const desktopBox = document.getElementById('scoreboard-box');
+    const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
+
+    if (isMobileDevice) {
+        if (mobileCurrent) mobileCurrent.scrollIntoView({ block: 'center', behavior });
+        else if (mobileBox) mobileBox.scrollTop = 0;
+    } else {
+        if (desktopCurrent) desktopCurrent.scrollIntoView({ block: 'center', behavior });
+        else if (desktopBox) desktopBox.scrollTop = 0;
+    }
+}
+
+function scrollScoreboardToMe() {
+    focusScoreboardOnCurrentUser(false);
+}
+
+async function openScoreboard(focusCurrentUser = true) {
     document.getElementById('score-search').value = '';
     const mobileSearch = document.getElementById('mobile-score-search');
     if (mobileSearch) mobileSearch.value = '';
@@ -1532,24 +1810,14 @@ async function openScoreboard(focusCurrentUser = false) {
     else openModal('score-modal');
 
     setTimeout(() => {
-        const desktopCurrent = document.querySelector('#score-body .current-user-row');
-        const mobileCurrent = document.querySelector('#mobile-score-body .current-user-row');
-        const desktopBox = document.getElementById('scoreboard-box');
-        const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
-
         if (!focusCurrentUser) {
+            const desktopBox = document.getElementById('scoreboard-box');
+            const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
             if (desktopBox) desktopBox.scrollTop = 0;
             if (mobileBox) mobileBox.scrollTop = 0;
             return;
         }
-
-        if (isMobileDevice) {
-            if (mobileCurrent) mobileCurrent.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            else if (mobileBox) mobileBox.scrollTop = 0;
-        } else {
-            if (desktopCurrent) desktopCurrent.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            else if (desktopBox) desktopBox.scrollTop = 0;
-        }
+        focusScoreboardOnCurrentUser(true);
     }, 80);
 }
 
@@ -1735,7 +2003,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })();
 
     // Закрытие модалок/мобильных экранов по клику вне окна.
-    ['reg-modal', 'login-modal', 'score-modal'].forEach((id) => {
+    ['reg-modal', 'login-modal', 'score-modal', 'stats-modal'].forEach((id) => {
         const overlay = document.getElementById(id);
         if (!overlay) return;
         overlay.addEventListener('click', (e) => {
@@ -1743,7 +2011,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    ['mobile-auth-screen', 'mobile-score-screen'].forEach((id) => {
+    ['mobile-auth-screen', 'mobile-score-screen', 'mobile-stats-screen'].forEach((id) => {
         const screen = document.getElementById(id);
         if (!screen) return;
         screen.addEventListener('click', (e) => {
@@ -1925,7 +2193,7 @@ const deathReviveCountdownEl = document.getElementById('death-revive-countdown')
 const deathReviveBtnEl = document.getElementById('death-revive-btn');
 const deathReviveBankCountEl = document.getElementById('death-revive-bank-count');
 
-let enemiesDefeated = 0, ammo = 20, hp = 100, lastHpForBar = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastCoinSpawnDistance = 0, coinsCollected = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let enemiesDefeated = 0, ammo = 20, hp = 100, lastHpForBar = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastCoinSpawnDistance = 0, coinsCollected = 0, shotsThisRun = 0, icePickupsThisRun = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
 let reviveOfferActive = false, reviveOfferDeadline = 0, reviveClockNextPlay = 0, reviveSplashBgStarted = false, gameOverMusicFadeInterval = null;
 const REVIVE_COST = 100;
 const REVIVE_DURATION_MS = 3000;
@@ -1974,6 +2242,7 @@ function performReviveFromDeath() {
     totalCoinsAllTime = Math.max(0, (totalCoinsAllTime | 0) - REVIVE_COST);
     persistTotalCoins();
     setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+    incrementLifetimeRevivesCloud();
     if (!isMobileDevice) { sounds.alive.currentTime = 0; sounds.alive.play(); }
     sounds.bg.pause();
     if (!isMobileDevice) currentTrack.volume = 0.3;
@@ -2371,7 +2640,7 @@ const hero = {
         this.angle += (targetAngle - this.angle) * 0.2 * ts;
     },
     draw(cameraY) { 
-        if (isGameOver && hp <= 0 && !reviveOfferActive) return; 
+        if (isGameOver && hp <= 0) return;
         if (invulFrames > 0 && shieldTimer <= 0 && !isBoostActive() && Math.floor(frame / 4) % 2 === 0) return; 
         let img; const animIdx = Math.floor(frame / 6) % 6, isActuallyFiring = isFiring || (superShotTimer > 0); 
         if (isBoostActive()) img = isActuallyFiring ? heroBoostShoot : heroBoost; else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand); else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx]; 
@@ -2393,7 +2662,7 @@ function triggerCoinHudPulse() {
 }
 function triggerHpHealPulse() { if (!hpContainer) return; hpContainer.classList.remove('hp-heal-pulse'); void hpContainer.offsetWidth; hpContainer.classList.add('hp-heal-pulse'); }
 function updateAmmo(newVal) { const isIncrease = newVal > ammo; ammo = Math.max(0, newVal); ammoCountEl.innerText = ammo; if (isIncrease) triggerBonusPulse(ammoCountEl); }
-function fireBullet(isSuper = false) { if (!isSuper) updateAmmo(ammo - 1); sounds.shoot.currentTime = 0; sounds.shoot.play(); bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 }); }
+function fireBullet(isSuper = false) { if (!isSuper) updateAmmo(ammo - 1); sounds.shoot.currentTime = 0; sounds.shoot.play(); shotsThisRun++; bullets.push({ x: hero.x+hero.w-10, y: hero.y+hero.h/2+8 }); }
 function addEnemyKill() { enemiesDefeated++; sounds.death_enemy.currentTime = 0; sounds.death_enemy.play(); if (!hero.grounded) { airKills++; if (airKills >= 3) { airKills = 0; updateAmmo(ammo + 5); sounds.ammo.currentTime = 0; sounds.ammo.play(); } } enemiesEl.innerText = enemiesDefeated; if (enemiesDefeated > 0 && enemiesDefeated % 10 === 0) { triggerBonusPulse(killedWrapper); updateAmmo(ammo + 5); sounds.cool.currentTime = 0; sounds.cool.play(); } boostKillsProgress++; if (boostKillsProgress >= BOOST_KILLS_PER_CHARGE) { boostKillsProgress = 0; boostFuel = Math.min(1, boostFuel + 0.5); triggerBoostRewardPulse(); } updateBoostChargeBar(); }
 function takeDamage(amount) { if (invulFrames > 0 || isBoostActive() || shieldTimer > 0 || isGameOver || gameSpeed > baseSpeed + 2) return; if (!cheatLife) { hp = Math.max(0, hp - amount); updateHPBar(); } invulFrames = 60; shakeTime = 20; if (hp <= 0) { createExplosion(hero.x + hero.w/2, hero.y + hero.h/2, 50, WHITE); triggerGameOver(); } }
 function updateHPBar() { hpBar.style.width = hp + '%'; if (hp > lastHpForBar) triggerHpHealPulse(); lastHpForBar = hp; }
@@ -2633,7 +2902,6 @@ function render(currentTime) {
         return p.life > 0;
     });
     if (!isGameOver || hp > 0) { hero.update(ts); hero.draw(fcy); }
-    else if (reviveOfferActive) { hero.draw(fcy); }
     if (!isGameOver) {
         const pickupTypes = ['ammo','life','boost','superShot','shield','ice','coin'];
         obstacles.forEach(o => {
@@ -2647,7 +2915,7 @@ function render(currentTime) {
                 thAdj = th + 28;
             }
             if (hero.x < o.x + tw - 20 + xPad && hero.x + hero.w > o.x + 20 - xPad && hero.y < itAdj + thAdj && hero.y + hero.h > itAdj) {
-                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;if(coinCountEl)coinCountEl.innerText=coinsCollected;sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
+                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){icePickupsThisRun++;targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;if(coinCountEl)coinCountEl.innerText=coinsCollected;sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
                 else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; spawnEnemyShards(o, gy); addEnemyKill(); if (shieldTimer > 0 || isBoostActive() || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && !isBoostActive() && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             }
         });
@@ -2762,7 +3030,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; if (coinCountEl) coinCountEl.innerText = '0'; if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 20; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; if (coinCountEl) coinCountEl.innerText = '0'; if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 20; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
