@@ -1173,7 +1173,7 @@
             </div>
             <div id="final-score-display" class="menu-score-text">
                 <div id="menu-status-wrapper">УНИЧТОЖАЙ ПРИШЕЛЬЦЕВ!</div>
-                <p id="controls-text" class="menu-controls-text">ПРОБЕЛ: ПРЫЖОК | Z: СТРЕЛЯЙ | X: БУСТ</p>
+                <p id="controls-text" class="menu-controls-text">ПРОБЕЛ: ПРЫГАЙ | Z: СТРЕЛЯЙ | X: БУСТ</p>
             </div>
         </div>
         <div id="menu-total-coins" aria-label="Всего монет за все игры">
@@ -2044,7 +2044,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const ctrlText = document.getElementById('controls-text');
-    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫЖОК | ЦЕНТР: БУСТ | СПРАВА: СТРЕЛЯЙ";
+    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫГАЙ | ЦЕНТР: БУСТ | СПРАВА: СТРЕЛЯЙ";
 
     (function revealInitialControlsWhenSplashReady() {
         if (!ctrlText) return;
