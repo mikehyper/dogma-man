@@ -1533,6 +1533,7 @@ function saveLocalLifetimeStats(data) {
 }
 
 function mergeLocalLifetimeAfterGameOver(run) {
+    if (!getLifetimeStatsStorageKey()) return;
     const s = loadLocalLifetimeStats();
     s.gamesPlayed = (s.gamesPlayed || 0) + 1;
     s.totalKills = (s.totalKills || 0) + run.kills;
@@ -1546,6 +1547,7 @@ function mergeLocalLifetimeAfterGameOver(run) {
 }
 
 function mergeLocalReviveCount() {
+    if (!getLifetimeStatsStorageKey()) return;
     const s = loadLocalLifetimeStats();
     s.totalRevives = (s.totalRevives || 0) + 1;
     saveLocalLifetimeStats(s);
@@ -1858,6 +1860,16 @@ async function openScoreboard(focusCurrentUser = true) {
     if (currentUser && !globalScores.some((x) => x.current)) {
         globalScores.push({
             name: normalizeTelegramUsername(currentUser),
+            kills: enemiesDefeated,
+            dist: (distance / 1000).toFixed(3),
+            current: true
+        });
+        globalScores.sort((a,b) => b.kills - a.kills);
+    }
+
+    if (!currentUser && !currentUserUid && !globalScores.some((x) => x.current)) {
+        globalScores.push({
+            name: 'гость',
             kills: enemiesDefeated,
             dist: (distance / 1000).toFixed(3),
             current: true
@@ -2364,6 +2376,10 @@ function loadTotalCoinsForCurrentAuth() {
     gameOverCoinBankDone = true;
     const key = getCoinsStorageKey();
     if (!key) {
+        try {
+            localStorage.removeItem('dogma_lifetime_guest');
+            localStorage.removeItem('dogma_total_coins_guest');
+        } catch (err) {}
         totalCoinsAllTime = 0;
         setMenuTotalCoinsCountDisplay(0);
         return;
