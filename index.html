@@ -2296,13 +2296,19 @@ const GAME_OVER_MENU_FADE_DONE_AT = 30;
 /** если картинки так и не загрузились — всё равно начать начисление */
 const GAME_OVER_COIN_BANK_FORCE_AT = -12;
 
+/** Монеты из копилки + собранные в этом забеге (ещё не «докатанные» анимацией в totalCoinsAllTime). */
+function getSpendableCoinsIncludingRun() {
+    return Math.max(0, (totalCoinsAllTime | 0) + Math.max(0, coinsCollected | 0));
+}
+
 function showDeathReviveUI() {
     if (!deathReviveLayerEl) return;
     deathReviveLayerEl.hidden = false;
     deathReviveLayerEl.classList.add('death-revive-layer--visible');
     deathReviveLayerEl.setAttribute('aria-hidden', 'false');
-    if (deathReviveBankCountEl) deathReviveBankCountEl.textContent = String(Math.max(0, totalCoinsAllTime | 0));
-    if (deathReviveBtnEl) deathReviveBtnEl.disabled = (totalCoinsAllTime | 0) < REVIVE_COST;
+    const spendable = getSpendableCoinsIncludingRun();
+    if (deathReviveBankCountEl) deathReviveBankCountEl.textContent = String(spendable);
+    if (deathReviveBtnEl) deathReviveBtnEl.disabled = spendable < REVIVE_COST;
 }
 
 function hideDeathReviveUI() {
@@ -2313,7 +2319,19 @@ function hideDeathReviveUI() {
 }
 
 function performReviveFromDeath() {
-    if (!reviveOfferActive || (totalCoinsAllTime | 0) < REVIVE_COST) return;
+    if (!reviveOfferActive) return;
+    let due = REVIVE_COST;
+    let bank = Math.max(0, totalCoinsAllTime | 0);
+    let run = Math.max(0, coinsCollected | 0);
+    if (bank + run < due) return;
+    const fromBank = Math.min(bank, due);
+    bank -= fromBank;
+    due -= fromBank;
+    const fromRun = Math.min(run, due);
+    run -= fromRun;
+    due -= fromRun;
+    totalCoinsAllTime = bank;
+    coinsCollected = run;
     reviveOfferActive = false;
     reviveSplashBgStarted = false;
     hideDeathReviveUI();
@@ -2321,9 +2339,9 @@ function performReviveFromDeath() {
     gameOverCoinBankPending = 0;
     gameOverCoinBankStarted = false;
     gameOverCoinBankDone = true;
-    totalCoinsAllTime = Math.max(0, (totalCoinsAllTime | 0) - REVIVE_COST);
     persistTotalCoins();
-    setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+    setMenuTotalCoinsCountDisplay(getSpendableCoinsIncludingRun());
+    if (coinCountEl) coinCountEl.textContent = String(Math.max(0, coinsCollected | 0));
     incrementLifetimeRevivesCloud();
     if (!isMobileDevice) { sounds.alive.currentTime = 0; sounds.alive.play(); }
     sounds.bg.pause();
