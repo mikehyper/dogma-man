@@ -2540,13 +2540,12 @@ function startBoostEffect() {
     updateBoostChargeBar();
 }
 let nextIceCheckpointKm = 30;
-let iceReadyForCurrentCheckpoint = false;
 let lastIcePickupKm = -999; // чтобы pity активировался после длительного отсутствия
 let isLeaderboardPulseSynced = false;
 const MOBILE_WORLD_BASE_WIDTH = 980;
 const ICE_HIGH_SPEED_THRESHOLD = 52;
 const ICE_PITY_DISTANCE_KM = 38; // если ice не подбирали долго — чуть ниже порог скорости, интервал как при pity
-const ICE_SPAWN_ATTEMPT_CHANCE = 0.22; // редко между успешными спавнами; первый лёд в забеге — без этого броска
+const ICE_SPAWN_ATTEMPT_CHANCE = 0.42; // шанс при очередном чекпоинте; первый лёд в забеге — без этого броска
 
 function getIceSpeedThresholdForKm(currentKm) {
     const k = Math.max(0, currentKm - 18);
@@ -2556,17 +2555,6 @@ function getIceSpeedThresholdForKm(currentKm) {
     return Math.min(ICE_HIGH_SPEED_THRESHOLD, early + (k - 44) * 1.12);
 }
 
-function getIceSpawnRatio(checkpointKm) {
-    return checkpointKm === 30 ? 0.65 : 0.70;
-}
-
-function getIceBoostOnlyOffset() {
-    if (Math.random() < 0.42) {
-        return 95 + Math.random() * 125; // в зоне двойного прыжка / короткого буста
-    }
-    return 255 + Math.random() * 210; // высоко — цепочка прыжков на бусте
-}
-
 function tryGetIceSpawnConfig() {
     const currentKm = distance / 1000;
     const kmSinceIce = currentKm - lastIcePickupKm;
@@ -2574,23 +2562,15 @@ function tryGetIceSpawnConfig() {
 
     let speedThreshold = getIceSpeedThresholdForKm(currentKm);
     if (isPityMode) speedThreshold = Math.max(16.5, speedThreshold - 5.5);
-    if (baseSpeed < speedThreshold || gameSpeed < speedThreshold) return null;
+    // Оценка «высокой скорости» по тому, что видит игрок: при бусте gameSpeed выше baseSpeed — иначе лёд не спавнился бы снова
+    if (Math.max(baseSpeed, gameSpeed) < speedThreshold) return null;
 
     if (currentKm < nextIceCheckpointKm) return null;
 
     if (lastIcePickupKm >= 0 && Math.random() > ICE_SPAWN_ATTEMPT_CHANCE) return null;
 
-    if (!iceReadyForCurrentCheckpoint) iceReadyForCurrentCheckpoint = true;
-
-    const spawnRatio = getIceSpawnRatio(nextIceCheckpointKm);
-    const config = {
-        x: canvas.width * spawnRatio,
-        offY: getIceBoostOnlyOffset()
-    };
-
     nextIceCheckpointKm += isPityMode ? 12 : 16;
-    iceReadyForCurrentCheckpoint = false;
-    return config;
+    return true;
 }
 
 const MAIN_YELLOW = '#ffc240', DARK_YELLOW = '#E0A11D', SHADOW_YELLOW = '#c28b1a', PIT_COLOR = '#c28b1a', PIT_SHADOW_DEEP = '#75540f', BLACK = '#000000', WHITE = '#ffffff', CITY_BROWN = '#AF7C22';
@@ -2839,8 +2819,8 @@ function spawnObstacle() {
     if (currentX - lastSpawnDist > nextSpawnGoal) {
         lastSpawnDist = currentX; nextSpawnGoal = (superShotTimer > 0) ? (300 + Math.random() * 350) : (600 + Math.random() * 650); 
         const r = Math.random(); let type, gy = getGroundY();
-        const iceConfig = tryGetIceSpawnConfig();
-        if (iceConfig) type = 'ice';
+        const spawnIce = tryGetIceSpawnConfig();
+        if (spawnIce) type = 'ice';
         else if (superShotTimer > 0) type = (Math.random() < 0.7) ? 'flyer' : 'zombie'; 
         else {
             const coinPity = distance - lastCoinSpawnDistance > COIN_PITY_DISTANCE_M;
@@ -2857,7 +2837,10 @@ function spawnObstacle() {
             else type = 'zombie';
         }
         if (type === 'pit' && (boostExitSafety > 0 || gameSpeed > baseSpeed + 2)) type = 'zombie';
-        if (type === 'ice') obstacles.push({ x: iceConfig.x, y: gy, w: 75, h: 75, offY: iceConfig.offY, type: 'ice', hit: false });
+        if (type === 'ice') {
+            let iY = (hero.y < 350) ? (hero.y - 100 - Math.random() * 200) : gy - 70 - Math.random() * 350;
+            obstacles.push({ x: canvas.width + 100, y: gy, w: 75, h: 75, offY: gy - iY, type: 'ice', hit: false });
+        }
         else if (type === 'flyer') { let alt = isBoostActive() ? (Math.random() * -1800 - 200) : (80 + Math.random() * (gy - 250)), sz = (80 + Math.random() * 110) * (isBoostActive() ? 1.6 : 1); obstacles.push({ x: canvas.width + 100, baseY: alt, currentY: alt, w: sz, h: sz, type: 'flyer', hit: false, flyIdx: Math.floor(Math.random()*flyingImages.length) }); } 
         else if (type === 'zombie') { let isElite = Math.random() < 0.15, hz = (160 + Math.random()*120) * (isElite ? 1.7 : 1); obstacles.push({ x: canvas.width + 100, y: gy, w: hz * 0.65, h: hz, type: 'zombie', hit: false, zombieIdx: Math.floor(Math.random()*zombieImages.length), isElite }); } 
         else if (type === 'coin') {
@@ -3027,7 +3010,7 @@ function render(currentTime) {
                 thAdj = th + 28;
             }
             if (hero.x < o.x + tw - 20 + xPad && hero.x + hero.w > o.x + 20 - xPad && hero.y < itAdj + thAdj && hero.y + hero.h > itAdj) {
-                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){icePickupsThisRun++;targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;updateCoinHudDisplay();sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
+                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){icePickupsThisRun++;targetBaseSpeed=baseSpeed*0.68;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;updateCoinHudDisplay();sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
                 else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; spawnEnemyShards(o, gy); addEnemyKill(); if (shieldTimer > 0 || isBoostActive() || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && !isBoostActive() && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             }
         });
@@ -3142,7 +3125,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
