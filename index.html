@@ -245,13 +245,32 @@
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
             background: transparent;
             display: none; align-items: center; justify-content: center;
             z-index: 1000;
+            isolation: isolate;
+            box-sizing: border-box;
+            padding: max(8px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+            overflow: auto;
+        }
+        .modal-overlay::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 0;
+        }
+        .modal-overlay > .modal-box {
+            z-index: 1;
         }
         .mobile-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffc240;
+            min-height: 100vh;
+            min-height: 100dvh;
+            /* Как у десктоп-модалок: затемнение вместо сплошного жёлтого (раньше тут не было dim) */
+            background: rgba(0, 0, 0, 0.5);
             display: none;
             z-index: 1300;
             box-sizing: border-box;
@@ -268,6 +287,8 @@
             box-shadow: 6px 6px 0 #000;
             padding: 18px;
             box-sizing: border-box;
+            position: relative;
+            z-index: 1;
         }
         .mobile-screen .modal-close {
             position: static;
@@ -283,9 +304,22 @@
             width: 100%;
             max-width: none;
         }
+        #mobile-score-screen.mobile-screen {
+            overflow: hidden;
+            align-items: center;
+            justify-content: safe center;
+            padding: max(8px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+            box-sizing: border-box;
+        }
         #mobile-score-screen .modal-box {
-            max-height: 88vh;
-            overflow: auto;
+            box-sizing: border-box;
+            max-height: min(88vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px));
+            width: min(92vw, 520px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            flex: 0 1 auto;
         }
         #mobile-score-screen .score-table {
             font-size: 18px;
@@ -302,10 +336,10 @@
             color: #000;
         }
 
-        /* CUSTOM SCROLLBAR */
-        #scoreboard-box::-webkit-scrollbar { width: 12px; }
-        #scoreboard-box::-webkit-scrollbar-track { background: #E0A11D; border-left: 4px solid #000; }
-        #scoreboard-box::-webkit-scrollbar-thumb { background: #000; border: 2px solid #ffc240; }
+        /* CUSTOM SCROLLBAR — только область таблицы */
+        .score-table-scroll::-webkit-scrollbar { width: 12px; }
+        .score-table-scroll::-webkit-scrollbar-track { background: #E0A11D; border-left: 4px solid #000; }
+        .score-table-scroll::-webkit-scrollbar-thumb { background: #000; border: 2px solid #ffc240; }
         #stats-box::-webkit-scrollbar,
         #stats-box-mobile::-webkit-scrollbar { width: 12px; }
         #stats-box::-webkit-scrollbar-track,
@@ -330,6 +364,7 @@
         .score-header-row {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px; gap: 20px;
+            flex-shrink: 0;
         }
         .score-header-row h2 { margin: 0; text-align: left; }
         .search-container {
@@ -343,9 +378,52 @@
             width: 20px; height: 20px; pointer-events: none;
         }
 
-        #scoreboard-box { max-width: 600px; width: 95%; max-height: 80vh; overflow-y: auto; padding-top: 40px; }
+        #scoreboard-box {
+            box-sizing: border-box;
+            max-width: 600px;
+            width: min(95%, 600px);
+            max-height: min(88vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px));
+            overflow: hidden;
+            padding: 36px 28px 18px 28px;
+            min-height: 0;
+            flex-shrink: 1;
+            align-self: center;
+        }
+        #scoreboard-box > .modal-close {
+            top: 6px;
+            right: 6px;
+        }
+        #mobile-score-screen .modal-box > .modal-close {
+            margin: -11px -7px -4px 0;
+        }
+        .score-table-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            isolation: isolate;
+        }
+        #mobile-score-screen .score-table-scroll {
+            flex: 1 1 auto;
+        }
         .score-table { width: 100%; border-collapse: collapse; font-size: 22px; color: #000; }
         .score-table thead { background: #000; color: #fff; }
+        .score-table-scroll .score-table thead tr {
+            background: #000;
+        }
+        .score-table-scroll .score-table thead th {
+            position: -webkit-sticky;
+            position: sticky;
+            /* Чуть выше 0 — перекрывает субпиксельные щели, из-за которых строки «торчат» над плашкой */
+            top: -2px;
+            z-index: 4;
+            background-color: #000;
+            color: #fff;
+            /* Вторая тень — полоса вверх, маскирует остаточный зазор при скролле */
+            box-shadow:
+                0 -12px 0 0 #000,
+                0 4px 0 #000;
+        }
         .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
         .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
         .current-user-row { background: rgba(255,255,255,0.4); font-weight: bold; }
@@ -355,6 +433,7 @@
             gap: 12px;
             margin-top: 4px;
             width: 100%;
+            flex-shrink: 0;
         }
         .score-nav-buttons .dogma-btn {
             flex: 1;
@@ -864,6 +943,7 @@
             .icon-btn { width: 54px; height: 54px; }
             #global-leaderboard-btn { width: 70px; height: 70px; bottom: 20px; right: 20px; }
             .modal-close { top: 5px; right: 5px; }
+            #scoreboard-box > .modal-close { top: 1px; right: 1px; }
             .score-header-row { flex-direction: column; align-items: flex-start; gap: 10px; }
             #auth-top-layer {
                 top: 10px;
@@ -1093,7 +1173,7 @@
             </div>
             <div id="final-score-display" class="menu-score-text">
                 <div id="menu-status-wrapper">УНИЧТОЖАЙ ПРИШЕЛЬЦЕВ!</div>
-                <p id="controls-text" class="menu-controls-text">ПРОБЕЛ: ПРЫЖОК | A: СТРЕЛЯЙ | D: БУСТ</p>
+                <p id="controls-text" class="menu-controls-text">ПРОБЕЛ: ПРЫЖОК | Z: СТРЕЛЯЙ | X: БУСТ</p>
             </div>
         </div>
         <div id="menu-total-coins" aria-label="Всего монет за все игры">
@@ -1151,12 +1231,14 @@
                     <img src="img/search.png" alt="Search">
                 </div>
             </div>
+            <div class="score-table-scroll" id="score-table-scroll">
             <table class="score-table">
                 <thead>
                     <tr><th>№</th><th>ИМЯ</th><th>УБИТО</th><th>КМ</th></tr>
                 </thead>
                 <tbody id="score-body"></tbody>
             </table>
+            </div>
             <div class="score-nav-buttons">
                 <button type="button" class="dogma-btn" onclick="scrollScoreboardToMe()">Я</button>
                 <button type="button" class="dogma-btn" onclick="scrollScoreboardToTop()">ТОП</button>
@@ -1203,12 +1285,14 @@
                     <img src="img/search.png" alt="Search">
                 </div>
             </div>
+            <div class="score-table-scroll" id="mobile-score-table-scroll">
             <table class="score-table">
                 <thead>
                     <tr><th>№</th><th>ИМЯ</th><th>УБИТО</th><th>КМ</th></tr>
                 </thead>
                 <tbody id="mobile-score-body"></tbody>
             </table>
+            </div>
             <div class="score-nav-buttons">
                 <button type="button" class="dogma-btn" onclick="scrollScoreboardToMe()">Я</button>
                 <button type="button" class="dogma-btn" onclick="scrollScoreboardToTop()">ТОП</button>
@@ -1686,7 +1770,6 @@ async function loadCloudScores() {
     }
 }
 
-
 function openModal(id) {
     if (isMobileDevice && (id === 'reg-modal' || id === 'login-modal')) {
         openMobileAuth(id === 'reg-modal' ? 'reg' : 'login');
@@ -1728,28 +1811,31 @@ async function logout() {
 }
 
 function scrollScoreboardToTop() {
-    const desktopBox = document.getElementById('scoreboard-box');
-    const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
-    if (isMobileDevice) {
-        if (mobileBox) mobileBox.scrollTop = 0;
-    } else if (desktopBox) {
-        desktopBox.scrollTop = 0;
-    }
+    const desktopScroll = document.getElementById('score-table-scroll');
+    const mobileScroll = document.getElementById('mobile-score-table-scroll');
+    [desktopScroll, mobileScroll].forEach((el) => {
+        if (!el) return;
+        try {
+            el.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) {
+            el.scrollTop = 0;
+        }
+    });
 }
 
 function focusScoreboardOnCurrentUser(instant) {
     const behavior = instant ? 'auto' : 'smooth';
     const desktopCurrent = document.querySelector('#score-body .current-user-row');
     const mobileCurrent = document.querySelector('#mobile-score-body .current-user-row');
-    const desktopBox = document.getElementById('scoreboard-box');
-    const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
+    const desktopScroll = document.getElementById('score-table-scroll');
+    const mobileScroll = document.getElementById('mobile-score-table-scroll');
 
     if (isMobileDevice) {
         if (mobileCurrent) mobileCurrent.scrollIntoView({ block: 'center', behavior });
-        else if (mobileBox) mobileBox.scrollTop = 0;
+        else if (mobileScroll) mobileScroll.scrollTop = 0;
     } else {
         if (desktopCurrent) desktopCurrent.scrollIntoView({ block: 'center', behavior });
-        else if (desktopBox) desktopBox.scrollTop = 0;
+        else if (desktopScroll) desktopScroll.scrollTop = 0;
     }
 }
 
@@ -1766,41 +1852,7 @@ async function openScoreboard(focusCurrentUser = true) {
     if (cloudScores && cloudScores.length) {
         globalScores = cloudScores;
     } else {
-        globalScores = [
-        { name: "SLAYER", kills: 500, dist: 12.5 },
-        { name: "PIXELHERO", kills: 450, dist: 10.1 },
-        { name: "DOGMAFAN", kills: 300, dist: 8.4 },
-        { name: "VOIDRUNNER", kills: 292, dist: 8.1 },
-        { name: "NIGHTBYTE", kills: 281, dist: 7.9 },
-        { name: "SKYCRASH", kills: 274, dist: 7.6 },
-        { name: "BULLETRAIN", kills: 268, dist: 7.4 },
-        { name: "STARDRIFT", kills: 259, dist: 7.1 },
-        { name: "ASHFALL", kills: 251, dist: 6.9 },
-        { name: "DOGMALORD", kills: 246, dist: 6.8 },
-        { name: "RETROJET", kills: 239, dist: 6.5 },
-        { name: "FROSTCODE", kills: 233, dist: 6.3 },
-        { name: "MEGAPIX", kills: 228, dist: 6.1 },
-        { name: "IRONLEAF", kills: 221, dist: 5.9 },
-        { name: "RAYSTORM", kills: 215, dist: 5.7 },
-        { name: "GHOSTARC", kills: 208, dist: 5.6 },
-        { name: "QUICKNOVA", kills: 201, dist: 5.3 },
-        { name: "ZEROFALL", kills: 196, dist: 5.1 },
-        { name: "PIXELFOX", kills: 189, dist: 4.9 },
-        { name: "BLAZEMODE", kills: 183, dist: 4.7 },
-        { name: "ALIENHUNT", kills: 176, dist: 4.5 },
-        { name: "NEXTRUN", kills: 169, dist: 4.3 },
-        { name: "MONOTRON", kills: 162, dist: 4.1 },
-        { name: "RUSTYJET", kills: 155, dist: 3.9 },
-        { name: "ECHOWAVE", kills: 149, dist: 3.7 },
-        { name: "COBRAKID", kills: 142, dist: 3.5 },
-        { name: "FIREPUNCH", kills: 136, dist: 3.3 },
-        { name: "LOWPOLY", kills: 129, dist: 3.1 },
-        { name: "MIRAGE", kills: 122, dist: 2.9 },
-        { name: "RIFTDOG", kills: 116, dist: 2.7 },
-        { name: "MECHBEAT", kills: 109, dist: 2.5 },
-        { name: "SHADOW", kills: 101, dist: 2.2 },
-        { name: normalizeTelegramUsername(currentUser || "gost"), kills: enemiesDefeated, dist: (distance/1000).toFixed(3), current: true }
-        ].sort((a,b) => b.kills - a.kills);
+        globalScores = [];
     }
 
     if (currentUser && !globalScores.some((x) => x.current)) {
@@ -1819,10 +1871,10 @@ async function openScoreboard(focusCurrentUser = true) {
 
     setTimeout(() => {
         if (!focusCurrentUser) {
-            const desktopBox = document.getElementById('scoreboard-box');
-            const mobileBox = document.querySelector('#mobile-score-screen .modal-box');
-            if (desktopBox) desktopBox.scrollTop = 0;
-            if (mobileBox) mobileBox.scrollTop = 0;
+            const desktopScroll = document.getElementById('score-table-scroll');
+            const mobileScroll = document.getElementById('mobile-score-table-scroll');
+            if (desktopScroll) desktopScroll.scrollTop = 0;
+            if (mobileScroll) mobileScroll.scrollTop = 0;
             return;
         }
         focusScoreboardOnCurrentUser(true);
@@ -1918,6 +1970,14 @@ function adjustMenuScale() {
 
     const modals = document.querySelectorAll('.modal-box');
     modals.forEach(m => {
+        if (m.closest('.modal-overlay') && !isMobileDevice) {
+            m.style.transform = '';
+            return;
+        }
+        if (m.closest('#mobile-score-screen')) {
+            m.style.transform = '';
+            return;
+        }
         const modalScale = isMobileDevice ? 1 : scale;
         m.style.transform = `scale(${modalScale})`;
     });
@@ -2016,7 +2076,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById(id);
         if (!overlay) return;
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) closeModal(id);
+            const box = overlay.querySelector('.modal-box');
+            if (box && !box.contains(e.target)) closeModal(id);
         });
     });
 
@@ -2428,7 +2489,7 @@ function updateBoostChargeBar() {
         boostChargeRowEl.classList.toggle('boost-row-item-active', itemBoostBar);
         boostChargeRowEl.classList.toggle('boost-row-empty', boostFuel <= 0 && boostTimer <= 0);
     }
-    if (boostChargeWrapEl) boostChargeWrapEl.title = isMobileDevice ? 'Буст — зажми центр экрана' : 'Буст — зажми Шифт; удерживая Шифт, пробел — дополнительные прыжки';
+    if (boostChargeWrapEl) boostChargeWrapEl.title = isMobileDevice ? 'Буст — зажми центр экрана' : 'Буст — зажми X; удерживая X, пробел — дополнительные прыжки';
 }
 
 function startBoostEffect() {
@@ -2438,7 +2499,7 @@ function startBoostEffect() {
     sounds.boost.play();
     updateBoostChargeBar();
 }
-let nextIceCheckpointKm = 20;
+let nextIceCheckpointKm = 30;
 let iceReadyForCurrentCheckpoint = false;
 let lastIcePickupKm = -999; // чтобы pity активировался после длительного отсутствия
 let isLeaderboardPulseSynced = false;
@@ -3039,7 +3100,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; if (coinCountEl) coinCountEl.innerText = '0'; if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 20; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; if (coinCountEl) coinCountEl.innerText = '0'; if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
@@ -3053,7 +3114,7 @@ window.addEventListener('keydown', (e) => {
         else if (!isGameOver && !isFirstRun) hero.jump();
         return;
     }
-    const isBoostKey = e.code === 'KeyD';
+    const isBoostKey = e.code === 'KeyX';
     if (isBoostKey) {
         if (!isFirstRun && !isGameOver) {
             const wasHeld = shiftBoostKeyHeld;
@@ -3062,11 +3123,11 @@ window.addEventListener('keydown', (e) => {
         }
         return;
     }
-    if (e.code === 'KeyA' && !isGameOver && !isFirstRun) { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } }
+    if (e.code === 'KeyZ' && !isGameOver && !isFirstRun) { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } }
 }, true);
 window.addEventListener('keyup', (e) => {
-    if (e.code === 'KeyA') isFiring = false;
-    if (e.code === 'KeyD') shiftBoostKeyHeld = false;
+    if (e.code === 'KeyZ') isFiring = false;
+    if (e.code === 'KeyX') shiftBoostKeyHeld = false;
 }, true);
 window.addEventListener('blur', () => { shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; });
 window.addEventListener('touchstart', (e) => {
