@@ -2281,6 +2281,8 @@ const REVIVE_COST = 100;
 const REVIVE_DURATION_MS = 3000;
 /** Звук заставки (sounds.bg) — за столько секунд до нуля по таймеру оживления */
 const REVIVE_SPLASH_SOUND_AT_SEC_LEFT = 0.42;
+/** Мигание героя перед окончанием эффекта айтема: ~2 секунды при 60 FPS */
+const ITEM_EFFECT_WARN_FRAMES = 120;
 const REVIVE_CLOCK_INTERVAL_MS = 200;
 const REVIVE_INVUL_FRAMES = 200;
 let boostFuel = 1, boostKillsProgress = 0, shiftBoostKeyHeld = false, mobileCenterBoostHeld = false;
@@ -2745,6 +2747,8 @@ const hero = {
     },
     draw(cameraY) { 
         if (isGameOver && hp <= 0) return;
+        const itemEffectEndingSoon = (shieldTimer > 0 && shieldTimer <= ITEM_EFFECT_WARN_FRAMES) || (boostTimer > 0 && boostTimer <= ITEM_EFFECT_WARN_FRAMES);
+        if (itemEffectEndingSoon && Math.floor(frame / 3) % 2 === 0) return;
         if (invulFrames > 0 && shieldTimer <= 0 && !isBoostActive() && Math.floor(frame / 4) % 2 === 0) return; 
         let img; const animIdx = Math.floor(frame / 6) % 6, isActuallyFiring = isFiring || (superShotTimer > 0); 
         if (isBoostActive()) img = isActuallyFiring ? heroBoostShoot : heroBoost; else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand); else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx]; 
