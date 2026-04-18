@@ -2303,6 +2303,10 @@ function getSpendableCoinsIncludingRun() {
     return Math.max(0, (totalCoinsAllTime | 0) + Math.max(0, coinsCollected | 0));
 }
 
+function updateCoinHudDisplay() {
+    if (coinCountEl) coinCountEl.textContent = String(getSpendableCoinsIncludingRun());
+}
+
 function showDeathReviveUI() {
     if (!deathReviveLayerEl) return;
     deathReviveLayerEl.hidden = false;
@@ -2343,7 +2347,7 @@ function performReviveFromDeath() {
     gameOverCoinBankDone = true;
     persistTotalCoins();
     setMenuTotalCoinsCountDisplay(getSpendableCoinsIncludingRun());
-    if (coinCountEl) coinCountEl.textContent = String(Math.max(0, coinsCollected | 0));
+    updateCoinHudDisplay();
     incrementLifetimeRevivesCloud();
     if (!isMobileDevice) { sounds.alive.currentTime = 0; sounds.alive.play(); }
     sounds.bg.pause();
@@ -3023,7 +3027,7 @@ function render(currentTime) {
                 thAdj = th + 28;
             }
             if (hero.x < o.x + tw - 20 + xPad && hero.x + hero.w > o.x + 20 - xPad && hero.y < itAdj + thAdj && hero.y + hero.h > itAdj) {
-                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){icePickupsThisRun++;targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;if(coinCountEl)coinCountEl.innerText=coinsCollected;sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
+                if (pickupTypes.includes(o.type)) { o.hit = true; if(o.type==='ammo'){updateAmmo(ammo+10);sounds.ammo.play();} else if(o.type==='life'){hp=Math.min(100,hp+30);updateHPBar();sounds.life.play();} else if(o.type==='boost'){startBoostEffect();} else if(o.type==='superShot'){superShotTimer=400;sounds.super.play();} else if(o.type==='shield'){shieldTimer=380;sounds.shield.play();} else if(o.type==='ice'){icePickupsThisRun++;targetBaseSpeed=baseSpeed*0.6;isBraking=true;lastIcePickupKm = distance / 1000;sounds.ice.volume=0.8;sounds.ice.currentTime=0;sounds.ice.play();} else if(o.type==='coin'){coinsCollected++;updateCoinHudDisplay();sounds.coin.currentTime=0;sounds.coin.play();triggerCoinHudPulse();const cw=o.currentDrawW||o.w||48,ch=o.currentDrawH||52;spawnCoinSparkles(o.x+cw*0.5,(gy-ch-offY)+ch*0.5);} }
                 else if (o.type === 'zombie' || o.type === 'flyer') { o.hit = true; spawnEnemyShards(o, gy); addEnemyKill(); if (shieldTimer > 0 || isBoostActive() || gameSpeed > baseSpeed + 2 || (hero.dy > 0 && hero.y + hero.h <= it + 60)) { if(hero.dy > 0 && shieldTimer <= 0 && !isBoostActive() && gameSpeed <= baseSpeed + 2) { hero.dy = -16; hero.jumpCount = 1; } } else { takeDamage(20); } }
             }
         });
@@ -3138,7 +3142,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; if (coinCountEl) coinCountEl.innerText = '0'; if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; iceReadyForCurrentCheckpoint = false; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
