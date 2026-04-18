@@ -345,7 +345,7 @@
         @keyframes popInCenter { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
         /* Отдельная анимация: translateZ поднимает слой текста над свечением (моб. WebKit). */
         @keyframes popInFinalScore { 0% { transform: scale(0) translateZ(0); } 70% { transform: scale(1.1) translateZ(0); } 100% { transform: scale(1) translateZ(1px); } }
-        @keyframes popInCig { 0% { transform: translate(97px, -173px) scale(0); } 70% { transform: translate(97px, -173px) scale(1.1); } 100% { transform: translate(97px, -173px) scale(1); } }
+        @keyframes popInCig { 0% { transform: translate(101px, -176px) scale(0); } 70% { transform: translate(101px, -176px) scale(1.1); } 100% { transform: translate(101px, -176px) scale(1); } }
         @keyframes popInLeaf { 0% { transform: translate(114px, 115px) scale(0); } 70% { transform: translate(114px, 115px) scale(1.1); } 100% { transform: translate(114px, 115px) scale(1); } }
         @keyframes popInStar { 0% { transform: translate(-283px, 51px) scale(0); } 70% { transform: translate(-283px, 51px) scale(1.1); } 100% { transform: translate(-283px, 51px) scale(1); } }
         @keyframes popInDgm { 0% { transform: translate(-305px, -184px) scale(0); } 70% { transform: translate(-305px, -184px) scale(1.1); } 100% { transform: translate(-305px, -184px) scale(1); } }
@@ -413,7 +413,7 @@
         }
 
         .decor-obj { position: absolute; z-index: 100; pointer-events: none; height: auto; }
-        #obj-cig { width: 162px; top: 50%; left: 58%; transform: translate(97px, -173px) scale(0); animation: popInCig 0.5s 0.5s forwards; }
+        #obj-cig { width: 162px; top: 50%; left: 58%; z-index: 14; transform: translate(101px, -176px) scale(0); animation: popInCig 0.5s 0.5s forwards; }
         #obj-leaf { width: 125px; top: 50%; left: 58%; transform: translate(114px, 115px) scale(0); animation: popInLeaf 0.5s 0.7s forwards; }
         #obj-star { width: 79px; top: 60%; left: 45%; transform: translate(-283px, 51px) scale(0); animation: popInStar 0.5s 0.8s forwards; }
         #obj-dgm { width: 130px; top: 60%; left: 45%; transform: translate(-305px, -184px) scale(0); animation: popInDgm 0.5s 0.6s forwards; }
