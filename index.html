@@ -1004,7 +1004,7 @@
             }
         }
 
-        /* Подсказка зон тача: прыжок — буст — стрельба (только узкий экран). */
+        /* Подсказка зон тача: слева прыжок, справа столбик буст (сверху) + стрельба (снизу). */
         #mobile-touch-nav {
             position: fixed;
             left: 0;
@@ -1012,10 +1012,10 @@
             bottom: 14px;
             z-index: 95;
             display: none;
-            justify-content: space-around;
-            align-items: center;
+            justify-content: space-between;
+            align-items: flex-end;
             gap: 0;
-            padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+            padding: 6px 22px calc(6px + env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
             pointer-events: none;
         }
@@ -1026,6 +1026,18 @@
             #mobile-touch-nav:not(.mobile-touch-nav--hidden) {
                 display: flex;
             }
+        }
+        .mobile-touch-nav-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            pointer-events: none;
+            transform: translateX(-8px);
+        }
+        .mobile-touch-nav-stack .mobile-touch-nav-zone {
+            pointer-events: auto;
         }
         .mobile-touch-nav-zone {
             flex: 0 0 auto;
@@ -1041,9 +1053,11 @@
         }
         .mobile-touch-nav-zone--jump {
             border: 3px solid rgba(255, 255, 255, 0.2);
+            transform: translateX(8px);
         }
         .mobile-touch-nav-zone--boost {
             border: 3px solid rgba(157, 56, 206, 0.2);
+            transform: translateY(-10px);
         }
         .mobile-touch-nav-zone--fire {
             border: 3px solid rgba(255, 220, 46, 0.2);
@@ -1052,28 +1066,19 @@
         .mobile-touch-nav-zone--jump.mobile-touch-nav-zone--pressed {
             border-color: rgba(255, 255, 255, 0.52);
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.24), 0 0 22px rgba(255, 255, 255, 0.1);
+            transform: translateX(8px);
         }
         .mobile-touch-nav-zone--boost:active,
         .mobile-touch-nav-zone--boost.mobile-touch-nav-zone--pressed {
             border-color: rgba(187, 95, 228, 0.58);
             box-shadow: 0 0 10px rgba(157, 56, 206, 0.26), 0 0 24px rgba(157, 56, 206, 0.12);
+            transform: translateY(-10px);
         }
         .mobile-touch-nav-zone--fire:active,
         .mobile-touch-nav-zone--fire.mobile-touch-nav-zone--pressed {
             border-color: rgba(255, 230, 120, 0.62);
             box-shadow: 0 0 10px rgba(255, 210, 55, 0.28), 0 0 22px rgba(255, 200, 40, 0.12);
         }
-        @media (max-width: 768px) and (orientation: landscape),
-               (max-width: 768px) and (max-height: 480px) {
-            #mobile-touch-nav .mobile-touch-nav-zone--boost {
-                transform: translateX(calc(-5vw - 8px));
-            }
-            #mobile-touch-nav .mobile-touch-nav-zone--boost:active,
-            #mobile-touch-nav .mobile-touch-nav-zone--boost.mobile-touch-nav-zone--pressed {
-                transform: translateX(calc(-5vw - 8px));
-            }
-        }
-
         /* Альбом / низкий экран: одна линия буст — HP — монеты (orientation иногда глючит — дублируем max-height). */
         @media (max-width: 768px) and (orientation: landscape),
                (max-width: 768px) and (max-height: 480px) {
@@ -1330,8 +1335,10 @@
 
     <div id="mobile-touch-nav" class="mobile-touch-nav--hidden" aria-hidden="true">
         <span class="mobile-touch-nav-zone mobile-touch-nav-zone--jump" title="Прыжок"></span>
-        <span class="mobile-touch-nav-zone mobile-touch-nav-zone--boost" title="Буст"></span>
-        <span class="mobile-touch-nav-zone mobile-touch-nav-zone--fire" title="Стрельба"></span>
+        <div class="mobile-touch-nav-stack">
+            <span class="mobile-touch-nav-zone mobile-touch-nav-zone--boost" title="Буст"></span>
+            <span class="mobile-touch-nav-zone mobile-touch-nav-zone--fire" title="Стрельба"></span>
+        </div>
     </div>
 
     <div id="death-revive-layer" hidden aria-hidden="true">
@@ -2056,7 +2063,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const ctrlText = document.getElementById('controls-text');
-    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫГАЙ | ЦЕНТР: БУСТ | СПРАВА: СТРЕЛЯЙ";
+    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫГАЙ | СПРАВА: СТРЕЛЯЙ И ЖМИ БУСТ";
 
     (function revealInitialControlsWhenSplashReady() {
         if (!ctrlText) return;
@@ -2270,6 +2277,7 @@ function wireMobileTouchNavPressGlow() {
 wireMobileTouchNavPressGlow();
 const controlsText = document.getElementById('controls-text'), hpContainer = document.getElementById('hp-container'), hpBar = document.getElementById('hp-bar'), ammoCountEl = document.getElementById('ammo-count'), coinCountEl = document.getElementById('coin-count'), coinHudRowEl = document.getElementById('coin-hud-row'), enemiesEl = document.getElementById('enemies'), distValEl = document.getElementById('distVal'), killedWrapper = document.getElementById('killed-wrapper'), boostChargeFillEl = document.getElementById('boost-charge-fill'), boostChargeWrapEl = document.getElementById('boost-charge-wrap'), boostChargeRowEl = document.getElementById('boost-charge-row');
 const leaderboardBtn = document.getElementById('global-leaderboard-btn');
+const dgmTopLogoLinkEl = document.getElementById('dgm-top-logo-link');
 const deathReviveLayerEl = document.getElementById('death-revive-layer');
 const deathReviveCountdownEl = document.getElementById('death-revive-countdown');
 const deathReviveBtnEl = document.getElementById('death-revive-btn');
@@ -2489,13 +2497,33 @@ function isBoostActive() {
     return (shiftBoostKeyHeld || mobileCenterBoostHeld) && boostFuel > 0;
 }
 
+/** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст; выше полосы направо — как раньше огонь. */
+const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 128;
+const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 56;
+
+function touchInMobileBoostZone(clientX, clientY) {
+    const w = window.innerWidth, h = window.innerHeight;
+    const fromBottom = h - clientY;
+    return clientX >= w / 2
+        && fromBottom > MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM
+        && fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX;
+}
+
+function touchInMobileFireZone(clientX, clientY) {
+    const w = window.innerWidth, h = window.innerHeight;
+    if (clientX < w / 2) return false;
+    if (touchInMobileBoostZone(clientX, clientY)) return false;
+    const fromBottom = h - clientY;
+    if (fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX) return fromBottom <= MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM;
+    return true;
+}
+
 function syncMobileCenterBoostFromTouches(e) {
     if (!isMobileDevice) return { prev: mobileCenterBoostHeld, now: mobileCenterBoostHeld };
-    const w = window.innerWidth, t1 = w / 3, t2 = (2 * w) / 3;
     let any = false;
     for (let i = 0; i < e.touches.length; i++) {
-        const x = e.touches[i].clientX;
-        if (x >= t1 && x < t2) { any = true; break; }
+        const t = e.touches[i];
+        if (touchInMobileBoostZone(t.clientX, t.clientY)) { any = true; break; }
     }
     const prev = mobileCenterBoostHeld;
     mobileCenterBoostHeld = any;
@@ -2529,7 +2557,7 @@ function updateBoostChargeBar() {
         boostChargeRowEl.classList.toggle('boost-row-item-active', itemBoostBar);
         boostChargeRowEl.classList.toggle('boost-row-empty', boostFuel <= 0 && boostTimer <= 0);
     }
-    if (boostChargeWrapEl) boostChargeWrapEl.title = isMobileDevice ? 'Буст — зажми центр экрана' : 'Буст — зажми X; удерживая X, пробел — дополнительные прыжки';
+    if (boostChargeWrapEl) boostChargeWrapEl.title = isMobileDevice ? 'Буст — зажми фиолетовую кнопку справа сверху' : 'Буст — зажми X; удерживая X, пробел — дополнительные прыжки';
 }
 
 function startBoostEffect() {
@@ -2606,13 +2634,17 @@ function resize() {
 }
 
 function restartLeaderboardPulse() {
-    if (!leaderboardBtn) return;
-    leaderboardBtn.style.animation = 'none';
-    void leaderboardBtn.offsetWidth;
-    requestAnimationFrame(() => {
-        leaderboardBtn.style.animation = 'winnerPulse 2s infinite ease-in-out';
-        leaderboardBtn.style.animationPlayState = 'running';
-    });
+    const restartWinnerPulse = (el) => {
+        if (!el) return;
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        requestAnimationFrame(() => {
+            el.style.animation = 'winnerPulse 2s infinite ease-in-out';
+            el.style.animationPlayState = 'running';
+        });
+    };
+    restartWinnerPulse(leaderboardBtn);
+    restartWinnerPulse(dgmTopLogoLinkEl);
 }
 window.addEventListener('resize', resize);
 if (window.visualViewport) {
@@ -3160,15 +3192,14 @@ window.addEventListener('touchstart', (e) => {
     const target = e.target;
     if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('#global-leaderboard-btn')) return;
     e.preventDefault();
-    const touchX = e.touches[0].clientX, w = window.innerWidth;
+    const touchX = e.touches[0].clientX, touchY = e.touches[0].clientY, w = window.innerWidth;
     if (isFirstRun || (isGameOver && canRestart && !reviveOfferActive)) { start(); return; }
     if (isGameOver) return;
     if (isMobileDevice) {
-        const t1 = w / 3, t2 = (2 * w) / 3;
         const { prev, now } = syncMobileCenterBoostFromTouches(e);
         if (now && !prev && boostFuel > 0 && !isFirstRun && !isGameOver) { sounds.boost2.volume = 0.7; sounds.boost2.currentTime = 0; sounds.boost2.play(); }
-        if (touchX < t1) hero.jump();
-        else if (touchX >= t2) {
+        if (touchX < w / 2) hero.jump();
+        else if (touchInMobileFireZone(touchX, touchY)) {
             isFiring = true;
             if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); }
         }
@@ -3179,9 +3210,16 @@ window.addEventListener('touchstart', (e) => {
 }, { passive: false });
 window.addEventListener('touchend', (e) => {
     if (isMobileDevice) syncMobileCenterBoostFromTouches(e);
-    const w = window.innerWidth, rightStart = isMobileDevice ? (2 * w) / 3 : w / 2;
+    const w = window.innerWidth;
     let stillFiring = false;
-    for (let i = 0; i < e.touches.length; i++) { if (e.touches[i].clientX >= rightStart) stillFiring = true; }
+    for (let i = 0; i < e.touches.length; i++) {
+        const t = e.touches[i];
+        if (isMobileDevice) {
+            if (touchInMobileFireZone(t.clientX, t.clientY)) stillFiring = true;
+        } else if (t.clientX >= w / 2) {
+            stillFiring = true;
+        }
+    }
     if (!stillFiring) isFiring = false;
 });
 window.addEventListener('touchcancel', (e) => { if (isMobileDevice) syncMobileCenterBoostFromTouches(e); });
