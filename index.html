@@ -276,8 +276,14 @@
             box-sizing: border-box;
             padding: 16px;
             overflow: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            /* body { touch-action: none } — без этого iOS часто не даёт скроллить оверлей */
+            touch-action: pan-y;
             align-items: center;
             justify-content: center;
+            padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
         }
         .mobile-screen .modal-box {
             width: min(92vw, 520px);
@@ -305,21 +311,41 @@
             max-width: none;
         }
         #mobile-score-screen.mobile-screen {
-            overflow: hidden;
+            overflow: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
             align-items: center;
-            justify-content: safe center;
+            justify-content: center;
             padding: max(8px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
             box-sizing: border-box;
         }
+        /* Grid + minmax(0,1fr): в WebKit flex часто не даёт таблице ограниченную высоту — скролл «мертвый», видна только шапка */
         #mobile-score-screen .modal-box {
             box-sizing: border-box;
             max-height: min(88vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px));
             width: min(92vw, 520px);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto minmax(0, 1fr) auto;
+            align-content: start;
             min-height: 0;
             flex: 0 1 auto;
+            touch-action: pan-y;
+        }
+        @supports (height: 100svh) {
+            #mobile-score-screen .modal-box {
+                max-height: min(85svh, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px));
+            }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            #mobile-score-screen .modal-box {
+                padding: 10px 14px;
+                gap: 8px;
+            }
+            #mobile-score-screen .score-header-row {
+                margin-bottom: 8px;
+            }
         }
         #mobile-score-screen .score-table {
             font-size: 18px;
@@ -394,6 +420,7 @@
             right: 6px;
         }
         #mobile-score-screen .modal-box > .modal-close {
+            justify-self: end;
             margin: -11px -7px -4px 0;
         }
         .score-table-scroll {
@@ -401,10 +428,22 @@
             min-height: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
             isolation: isolate;
         }
+        #scoreboard-box .score-table-scroll {
+            flex: 1 1 0%;
+            min-height: 0;
+        }
         #mobile-score-screen .score-table-scroll {
-            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+            max-height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            isolation: auto;
         }
         .score-table { width: 100%; border-collapse: collapse; font-size: 22px; color: #000; }
         .score-table thead { background: #000; color: #fff; }
@@ -424,6 +463,13 @@
                 0 -12px 0 0 #000,
                 0 4px 0 #000;
         }
+        /* iOS: sticky+таблица+тени — скролл tbody ломается, строки «пропадают» под шапкой */
+        #mobile-score-screen .score-table-scroll .score-table thead th {
+            position: static;
+            top: auto;
+            z-index: auto;
+            box-shadow: none;
+        }
         .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
         .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
         .current-user-row { background: rgba(255,255,255,0.4); font-weight: bold; }
@@ -441,7 +487,18 @@
         }
 
         #stats-box {
-            max-width: 520px; width: 95%; max-height: 85vh; overflow-y: auto; padding-top: 44px;
+            max-width: 520px; width: 95%;
+            max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-top: 44px;
+        }
+        #stats-box-mobile {
+            max-height: min(88vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0;
+            touch-action: pan-y;
         }
         .stats-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
         .js-stat-row {
@@ -1994,7 +2051,8 @@ function adjustMenuScale() {
             m.style.transform = '';
             return;
         }
-        if (m.closest('#mobile-score-screen')) {
+        /* transform ломает нормальный touch-scroll в WebKit на жёлтых модалках */
+        if (m.closest('.mobile-screen')) {
             m.style.transform = '';
             return;
         }
@@ -2795,7 +2853,8 @@ const hero = {
     draw(cameraY) { 
         if (isGameOver && hp <= 0) return;
         const itemEffectEndingSoon = (shieldTimer > 0 && shieldTimer <= ITEM_EFFECT_WARN_FRAMES) || (boostTimer > 0 && boostTimer <= ITEM_EFFECT_WARN_FRAMES);
-        if (itemEffectEndingSoon && Math.floor(frame / 3) % 2 === 0) return;
+        const speedInertiaInvulnBlink = shieldTimer <= 0 && !isBoostActive() && gameSpeed > baseSpeed + 2;
+        if ((itemEffectEndingSoon || speedInertiaInvulnBlink) && Math.floor(frame / 3) % 2 === 0) return;
         if (invulFrames > 0 && shieldTimer <= 0 && !isBoostActive() && Math.floor(frame / 4) % 2 === 0) return; 
         let img; const animIdx = Math.floor(frame / 6) % 6, isActuallyFiring = isFiring || (superShotTimer > 0); 
         if (isBoostActive()) img = isActuallyFiring ? heroBoostShoot : heroBoost; else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand); else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx]; 
