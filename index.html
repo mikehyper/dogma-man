@@ -2853,8 +2853,7 @@ const hero = {
     draw(cameraY) { 
         if (isGameOver && hp <= 0) return;
         const itemEffectEndingSoon = (shieldTimer > 0 && shieldTimer <= ITEM_EFFECT_WARN_FRAMES) || (boostTimer > 0 && boostTimer <= ITEM_EFFECT_WARN_FRAMES);
-        const speedInertiaInvulnBlink = shieldTimer <= 0 && !isBoostActive() && gameSpeed > baseSpeed + 2;
-        if ((itemEffectEndingSoon || speedInertiaInvulnBlink) && Math.floor(frame / 3) % 2 === 0) return;
+        if (itemEffectEndingSoon && Math.floor(frame / 3) % 2 === 0) return;
         if (invulFrames > 0 && shieldTimer <= 0 && !isBoostActive() && Math.floor(frame / 4) % 2 === 0) return; 
         let img; const animIdx = Math.floor(frame / 6) % 6, isActuallyFiring = isFiring || (superShotTimer > 0); 
         if (isBoostActive()) img = isActuallyFiring ? heroBoostShoot : heroBoost; else if (!this.grounded) img = this.dy < 0 ? (isActuallyFiring ? heroJumpShoot : heroJump) : (isActuallyFiring ? heroLandShoot : heroLand); else img = isActuallyFiring ? heroRunShoot[animIdx] : heroRun[animIdx]; 
