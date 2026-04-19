@@ -1482,6 +1482,7 @@ function applyAuthState(name, uid = null, opts) {
     }
     if (!opts || !opts.skipCoinReload) {
         loadTotalCoinsForCurrentAuth();
+        syncBankCoinsFromCloud();
     }
 }
 
@@ -2390,8 +2391,16 @@ function getCoinsStorageKey() {
 function persistTotalCoins() {
     const key = getCoinsStorageKey();
     if (!key) return;
+    const n = Math.max(0, totalCoinsAllTime | 0);
     try {
-        localStorage.setItem(key, String(Math.max(0, totalCoinsAllTime | 0)));
+        localStorage.setItem(key, String(n));
+    } catch (err) {}
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    try {
+        fbDb.collection('players').doc(currentUserUid).set({
+            bankCoins: n,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
     } catch (err) {}
 }
 
@@ -2433,6 +2442,28 @@ function loadTotalCoinsForCurrentAuth() {
     }
     totalCoinsAllTime = v === null ? 0 : v;
     setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+}
+
+async function syncBankCoinsFromCloud() {
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    const key = getCoinsStorageKey();
+    if (!key) return;
+    try {
+        const snap = await fbDb.collection('players').doc(currentUserUid).get();
+        if (!snap.exists) return;
+        const raw = snap.data().bankCoins;
+        const hasCloud = raw != null && Number.isFinite(Number(raw));
+        if (!hasCloud) {
+            persistTotalCoins();
+            return;
+        }
+        const c = Math.max(0, Number(raw) | 0);
+        totalCoinsAllTime = c;
+        try {
+            localStorage.setItem(key, String(c));
+        } catch (e) {}
+        setMenuTotalCoinsCountDisplay(c);
+    } catch (err) {}
 }
 
 function setMenuTotalCoinsCountDisplay(n) {
@@ -2497,8 +2528,8 @@ function isBoostActive() {
     return (shiftBoostKeyHeld || mobileCenterBoostHeld) && boostFuel > 0;
 }
 
-/** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст; выше полосы направо — как раньше огонь. */
-const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 128;
+/** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст (max с запасом «чуть выше» фиолетовой кнопки); выше полосы направо — как раньше огонь. */
+const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 154;
 const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 56;
 
 function touchInMobileBoostZone(clientX, clientY) {
