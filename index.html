@@ -50,7 +50,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             background-color: #ffc240; z-index: 200; opacity: 1; transition: opacity 0.2s ease-in; 
         }
-
         .menu-vignette {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 5; pointer-events: none;
@@ -215,6 +214,7 @@
             object-fit: contain;
             display: block;
             flex-shrink: 0;
+            align-self: center;
             filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.92));
         }
         #menu-total-coins-count {
@@ -225,15 +225,18 @@
             line-height: 1;
             letter-spacing: 0.02em;
             min-width: 2ch;
+            min-height: 58px;
             display: inline-flex;
             align-items: center;
-            transform: translateY(-8px);
+            align-self: center;
+            /* Pribambas даёт много «воздуха» под цифрами — поднимаем к оптическому центру монеты 58px */
+            transform: translateY(-0.14em);
             transition: color 0.12s ease;
         }
         @keyframes menuTotalCoinsBank {
-            0% { transform: translateY(-8px) scale(1); color: #000; text-shadow: none; }
-            38% { transform: translateY(-8px) scale(1.14); color: #fff; text-shadow: 0 0 14px rgba(255, 255, 255, 0.45); }
-            100% { transform: translateY(-8px) scale(1); color: #000; text-shadow: none; }
+            0% { transform: translateY(-0.14em) scale(1); color: #000; text-shadow: none; }
+            38% { transform: translateY(-0.14em) scale(1.14); color: #fff; text-shadow: 0 0 14px rgba(255, 255, 255, 0.45); }
+            100% { transform: translateY(-0.14em) scale(1); color: #000; text-shadow: none; }
         }
         #menu-total-coins-count.menu-total-coins-count--bank-anim {
             animation: menuTotalCoinsBank 0.78s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
@@ -306,9 +309,32 @@
             align-items: flex-start;
             gap: 10px;
         }
+        /* Топ бойцов: заголовок + поиск и крестик в одной строке грида */
+        #mobile-score-screen .modal-box > .score-header-row {
+            grid-row: 1;
+            grid-column: 1;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding-top: 10px;
+            margin: 0 0 12px 0;
+        }
         .mobile-screen .search-container {
             width: 100%;
             max-width: none;
+        }
+        #mobile-score-screen .search-container {
+            width: auto;
+            flex: 0 0 auto;
+            min-width: 0;
+            max-width: 200px;
+            display: flex;
+            align-items: center;
+            margin-left: auto;
         }
         #mobile-score-screen.mobile-screen {
             overflow: auto;
@@ -327,7 +353,7 @@
             overflow: hidden;
             display: grid;
             grid-template-columns: minmax(0, 1fr);
-            grid-template-rows: auto auto minmax(0, 1fr) auto;
+            grid-template-rows: auto minmax(0, 1fr) auto;
             align-content: start;
             min-height: 0;
             flex: 0 1 auto;
@@ -343,7 +369,7 @@
                 padding: 10px 14px;
                 gap: 8px;
             }
-            #mobile-score-screen .score-header-row {
+            #mobile-score-screen .modal-box > .score-header-row {
                 margin-bottom: 8px;
             }
         }
@@ -410,18 +436,58 @@
             width: min(95%, 600px);
             max-height: min(88vh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px));
             overflow: hidden;
-            padding: 36px 28px 18px 28px;
+            padding: 42px 28px 18px 28px;
             min-height: 0;
             flex-shrink: 1;
             align-self: center;
         }
         #scoreboard-box > .modal-close {
-            top: 6px;
-            right: 6px;
+            top: 8px;
+            right: 10px;
+        }
+        #scoreboard-box::before,
+        #mobile-score-screen .modal-box::before,
+        #stats-box::before,
+        #stats-box-mobile::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.07;
+            background-image: url('img/pattern.png');
+            background-repeat: repeat;
+            background-position: 0 0;
+            background-size: 240px auto;
+        }
+        #scoreboard-box > :not(.modal-close),
+        #mobile-score-screen .modal-box > :not(.modal-close) {
+            position: relative;
+            z-index: 1;
         }
         #mobile-score-screen .modal-box > .modal-close {
-            justify-self: end;
-            margin: -11px -7px -4px 0;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            z-index: 5;
+            margin: 0;
+        }
+        #mobile-score-screen .modal-box > .score-table-scroll {
+            grid-row: 2;
+            grid-column: 1;
+            min-height: 0;
+        }
+        #mobile-score-screen .modal-box > .score-nav-buttons {
+            grid-row: 3;
+            grid-column: 1;
+        }
+        #scoreboard-box .score-table tbody tr,
+        #mobile-score-screen .score-table tbody tr {
+            background: #ffc240;
+        }
+        #scoreboard-box .score-table tbody tr.current-user-row,
+        #mobile-score-screen .score-table tbody tr.current-user-row {
+            background: rgba(255, 255, 255, 0.4);
         }
         .score-table-scroll {
             flex: 1 1 auto;
@@ -472,6 +538,10 @@
         }
         .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
         .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
+        .score-table th:nth-child(3),
+        .score-table td:nth-child(3) {
+            font-size: 1.2em;
+        }
         .current-user-row { background: rgba(255,255,255,0.4); font-weight: bold; }
 
         .score-nav-buttons {
@@ -499,6 +569,61 @@
             -webkit-overflow-scrolling: touch;
             min-height: 0;
             touch-action: pan-y;
+        }
+        #stats-box > :not(.modal-close),
+        #stats-box-mobile > :not(.modal-close) {
+            position: relative;
+            z-index: 1;
+        }
+        #stats-box > .modal-close {
+            z-index: 2;
+        }
+        #stats-box-mobile > .modal-close {
+            position: relative;
+            z-index: 2;
+        }
+        #stats-box > h2,
+        #stats-box-mobile > h2 {
+            -webkit-text-stroke: 11px #fff;
+            paint-order: stroke fill;
+        }
+        #stats-box > h2 {
+            font-size: 58px;
+            line-height: 1.05;
+        }
+        #stats-box-mobile > h2 {
+            font-size: 44px;
+            line-height: 1.05;
+        }
+        #scoreboard-box .score-header-row h2,
+        #mobile-score-screen .score-header-row h2 {
+            -webkit-text-stroke: 9px #fff;
+            paint-order: stroke fill;
+        }
+        #scoreboard-box .score-header-row {
+            margin-top: 8px;
+            margin-bottom: 16px;
+            justify-content: space-between;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #scoreboard-box .search-container {
+            flex-grow: 0;
+            margin-left: auto;
+        }
+        #scoreboard-box .score-header-row h2,
+        #mobile-score-screen .score-header-row h2 {
+            flex-shrink: 0;
+            line-height: 1;
+            align-self: center;
+            /* Обводка + Pribambas: визуальный центр ниже геометрического — поднимаем к полю поиска */
+            transform: translateY(-0.2em);
+        }
+        #scoreboard-box .score-header-row h2 {
+            font-size: 50px;
+        }
+        #mobile-score-screen .score-header-row h2 {
+            font-size: 40px;
         }
         .stats-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
         .js-stat-row {
@@ -899,6 +1024,15 @@
             position: relative;
             top: -8px;
         }
+        /* Счётчик в игре: цифры визуально «ниже» геометрического центра 28px — кружок чуть вниз */
+        #coin-hud-row .coin-count-value {
+            top: -5px;
+        }
+        @media (min-width: 769px) {
+            #coin-hud-row .coin-hud-icon {
+                top: -1px;
+            }
+        }
         @keyframes coinHudIconGlowPick {
             0%, 100% { filter: none; }
             40% { filter: drop-shadow(0 0 9px rgba(255, 210, 55, 0.95)) drop-shadow(0 0 18px rgba(255, 230, 100, 0.75)); }
@@ -956,9 +1090,8 @@
             100% { filter: brightness(1); box-shadow: none; transform: scaleX(1); background: #9d38ce; }
         }
         .stat-value { font-size: 44px; display: inline-block; transition: transform 0.2s ease; line-height: 1; }
-        
-        .killed-container { 
-            display: flex; align-items: center; font-size: 52px; line-height: 1; margin-top: 9px; white-space: nowrap; transition: color 0.2s ease, transform 0.2s ease; 
+        .killed-container {
+            display: flex; align-items: center; font-size: 52px; line-height: 1; margin-top: 9px; white-space: nowrap; transition: color 0.2s ease, transform 0.2s ease;
         }
         @keyframes killedPulse {
             0% { transform: scale(1); color: #000; }
@@ -1040,17 +1173,21 @@
             display: block;
             flex-shrink: 0;
             object-fit: contain;
+            /* В PNG монета часто визуально «тяжелее» снизу — чуть поднимаем к центру цифры */
+            align-self: center;
         }
         #death-revive-bank-count {
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 28px;
+            min-height: 28px;
             line-height: 1;
             font-size: 26px;
+            font-weight: 700;
             margin: 0;
             padding: 0;
             font-variant-numeric: tabular-nums;
+            transform: translateY(-0.2em);
         }
         #hp-bar { width: 100%; height: 100%; background: #fff; transition: width 0.2s ease; }
         @keyframes hpHealGlow {
@@ -1077,13 +1214,13 @@
             .boost-charge-track { height: 4px; }
             .coin-hud-row { max-width: 136px; margin-top: -18px; margin-bottom: 6px; gap: 6px; }
             .coin-hud-row .coin-hud-icon { top: 0; }
-            #coin-hud-row .coin-count-value { top: 3px; }
+            #coin-hud-row .coin-count-value { top: -3px; }
             .coin-count-value { font-size: 22px; line-height: 1; height: 22px; top: -6px; }
             .coin-hud-icon { width: 22px; height: 22px; font-size: 12px; border-width: 2px; top: -3px; }
             .coin-hud-icon::before { inset: 2px; }
             .ui-panel .ui-section:first-child .stat-value,
             .ui-panel .ui-section:last-child .stat-value { font-size: 28px; }
-            .stat-value { font-size: 32px; } 
+            .stat-value { font-size: 32px; }
             .killed-container { font-size: 32px; }
             .ui-panel .ui-section:first-child { 
                 align-items: flex-start;
@@ -1107,8 +1244,9 @@
             .icon-btn { width: 54px; height: 54px; }
             #global-leaderboard-btn { width: 70px; height: 70px; bottom: 20px; right: 20px; }
             .modal-close { top: 5px; right: 5px; }
-            #scoreboard-box > .modal-close { top: 1px; right: 1px; }
+            #scoreboard-box > .modal-close { top: 6px; right: 10px; }
             .score-header-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            #scoreboard-box .score-header-row { padding-right: 0; }
             #auth-top-layer {
                 top: 10px;
                 right: 10px;
@@ -1159,12 +1297,13 @@
             }
             #menu-total-coins-count {
                 font-size: 28px;
-                transform: translateY(5px);
+                min-height: 40px;
+                transform: translateY(-0.12em);
             }
             @keyframes menuTotalCoinsBank {
-                0% { transform: translateY(5px) scale(1); color: #000; text-shadow: none; }
-                38% { transform: translateY(5px) scale(1.12); color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45); }
-                100% { transform: translateY(5px) scale(1); color: #000; text-shadow: none; }
+                0% { transform: translateY(-0.12em) scale(1); color: #000; text-shadow: none; }
+                38% { transform: translateY(-0.12em) scale(1.12); color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45); }
+                100% { transform: translateY(-0.12em) scale(1); color: #000; text-shadow: none; }
             }
         }
 
@@ -1660,6 +1799,11 @@ function applyAuthState(name, uid = null, opts) {
     if (!opts || !opts.skipCoinReload) {
         loadTotalCoinsForCurrentAuth();
         syncBankCoinsFromCloud();
+        try {
+            if (typeof reviveOfferActive !== 'undefined' && reviveOfferActive && typeof showDeathReviveUI === 'function') {
+                showDeathReviveUI();
+            }
+        } catch (e) {}
     }
 }
 
@@ -2212,8 +2356,9 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
         const savedUser = localStorage.getItem('dogma_current_user');
         if (firebaseEnabled && fbAuth) {
-            if (savedUser) applyAuthState(savedUser, null, { skipCoinReload: true });
-            else applyAuthState(null, null, { skipCoinReload: true });
+            /* Сразу подгружаем копилку по нику (ключ name_*), иначе до onAuth — totalCoinsAllTime остаётся 0 и суммы на экране смерти занижены. */
+            if (savedUser) applyAuthState(savedUser, null);
+            else applyAuthState(null, null);
         } else if (savedUser) {
             applyAuthState(savedUser);
         } else {
@@ -2605,38 +2750,56 @@ let gameOverCoinBankPending = 0;
 let gameOverCoinBankStarted = false;
 let gameOverCoinBankDone = true;
 
+function readCoinsFromStorageKey(key) {
+    if (!key) return null;
+    try {
+        const raw = localStorage.getItem(key);
+        const n = parseInt(raw, 10);
+        if (Number.isFinite(n) && n >= 0) return n;
+    } catch (err) {}
+    return null;
+}
+
 function loadTotalCoinsForCurrentAuth() {
     cancelPendingCoinBank();
     gameOverCoinBankPending = 0;
     gameOverCoinBankStarted = false;
     gameOverCoinBankDone = true;
-    const key = getCoinsStorageKey();
-    if (!key) {
+    const primaryKey = getCoinsStorageKey();
+    if (!primaryKey) {
         try {
             localStorage.removeItem('dogma_lifetime_guest');
             localStorage.removeItem('dogma_total_coins_guest');
         } catch (err) {}
         totalCoinsAllTime = 0;
         setMenuTotalCoinsCountDisplay(0);
+        updateCoinHudDisplay();
         return;
     }
-    let v = null;
+    const candidates = [];
+    const vPri = readCoinsFromStorageKey(primaryKey);
+    if (vPri != null) candidates.push(vPri);
+    /* После входа по Firebase копилка могла быть в ключе по нику, а uid-ключ пустой — берём максимум, чтобы не терять монеты на ПК. */
+    if (currentUserUid && currentUser) {
+        const nameKey = 'dogma_total_coins_name_' + currentUser;
+        if (nameKey !== primaryKey) {
+            const vName = readCoinsFromStorageKey(nameKey);
+            if (vName != null) candidates.push(vName);
+        }
+    }
     try {
-        const raw = localStorage.getItem(key);
-        const n = parseInt(raw, 10);
-        if (Number.isFinite(n) && n >= 0) v = n;
+        const leg = parseInt(localStorage.getItem(TOTAL_COINS_LS_KEY), 10);
+        if (Number.isFinite(leg) && leg >= 0) candidates.push(leg);
     } catch (err) {}
-    if (v === null) {
+    const best = candidates.length ? Math.max.apply(null, candidates) : null;
+    totalCoinsAllTime = best === null ? 0 : best;
+    if (best != null) {
         try {
-            const leg = parseInt(localStorage.getItem(TOTAL_COINS_LS_KEY), 10);
-            if (Number.isFinite(leg) && leg >= 0) {
-                v = leg;
-                localStorage.setItem(key, String(leg));
-            }
+            localStorage.setItem(primaryKey, String(totalCoinsAllTime));
         } catch (err) {}
     }
-    totalCoinsAllTime = v === null ? 0 : v;
     setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+    updateCoinHudDisplay();
 }
 
 async function syncBankCoinsFromCloud() {
@@ -2653,11 +2816,16 @@ async function syncBankCoinsFromCloud() {
             return;
         }
         const c = Math.max(0, Number(raw) | 0);
-        totalCoinsAllTime = c;
+        // Никогда не уменьшаем локальную копилку из-за устаревшего облачного значения.
+        const merged = Math.max(0, Math.max(totalCoinsAllTime | 0, c));
+        totalCoinsAllTime = merged;
         try {
-            localStorage.setItem(key, String(c));
+            localStorage.setItem(key, String(merged));
         } catch (e) {}
-        setMenuTotalCoinsCountDisplay(c);
+        setMenuTotalCoinsCountDisplay(merged);
+        updateCoinHudDisplay();
+        // Если локально было больше — аккуратно подтолкнём облако вверх.
+        if (merged !== c) persistTotalCoins();
     } catch (err) {}
 }
 
@@ -2686,18 +2854,31 @@ function runCoinBankAnimFromTotal(roundCoins, onComplete) {
     cancelPendingCoinBank();
     if (menuTotalCoinsCountEl) menuTotalCoinsCountEl.classList.remove('menu-total-coins-count--bank-anim');
     const gen = coinBankAnimGeneration;
-    setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
     if (roundCoins <= 0) {
+        setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
         if (onComplete) onComplete();
         return;
     }
+    const from = totalCoinsAllTime;
+    const to = totalCoinsAllTime + roundCoins;
+    let parsed = NaN;
+    if (menuTotalCoinsCountEl) {
+        parsed = parseInt(String(menuTotalCoinsCountEl.textContent).replace(/\s+/g, ''), 10);
+    }
+    /* Уже показываем полную сумму (копилка + забег) — не проваливаемся к «только банк» и не дублируем анимацию. */
+    if (Number.isFinite(parsed) && parsed >= to) {
+        totalCoinsAllTime = to;
+        persistTotalCoins();
+        setMenuTotalCoinsCountDisplay(to);
+        if (onComplete) onComplete();
+        return;
+    }
+    setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
     if (menuTotalCoinsCountEl) menuTotalCoinsCountEl.classList.add('menu-total-coins-count--bank-anim');
     if (!isMobileDevice) {
         sounds.up.currentTime = 0;
         sounds.up.play();
     }
-    const from = totalCoinsAllTime;
-    const to = totalCoinsAllTime + roundCoins;
     const t0 = performance.now();
     const step = (now) => {
         if (gen !== coinBankAnimGeneration) return;
@@ -3314,7 +3495,11 @@ function render(currentTime) {
                 gameOverCoinBankStarted = true;
                 const add = gameOverCoinBankPending;
                 gameOverCoinBankPending = 0;
-                runCoinBankAnimFromTotal(add, () => { gameOverCoinBankDone = true; });
+                runCoinBankAnimFromTotal(add, () => {
+                    gameOverCoinBankDone = true;
+                    coinsCollected = 0;
+                    updateCoinHudDisplay();
+                });
             }
         }
         if (gameOverTimer < -60 && !canRestart && gameOverCoinBankDone) { canRestart = true; controlsText.innerText = isMobileDevice ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; controlsText.classList.add('show-text'); }
@@ -3351,7 +3536,8 @@ function triggerGameOver() {
     gameOverCoinBankStarted = false;
     gameOverCoinBankDone = coinsCollected <= 0;
     cancelPendingCoinBank();
-    setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+    setMenuTotalCoinsCountDisplay(getSpendableCoinsIncludingRun());
+    updateCoinHudDisplay();
     menuStatusWrapper.style.fontSize = isMobileDevice ? "" : "75px"; 
     menuStatusWrapper.innerText = "УНИЧТОЖЕНО: " + enemiesDefeated; 
     adjustMenuScale();
