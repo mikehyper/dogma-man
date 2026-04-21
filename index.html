@@ -1208,7 +1208,6 @@
             margin: 0;
             padding: 0;
             font-variant-numeric: tabular-nums;
-            transform: translateY(-0.2em);
         }
         #hp-bar { width: 100%; height: 100%; background: #fff; transition: width 0.2s ease; }
         @keyframes hpHealGlow {
@@ -1299,22 +1298,27 @@
             .mobile-screen .js-stat-row { font-size: 15px; gap: 10px; padding: 8px 0; }
             #mobile-score-screen .score-table { font-size: 16px; }
             #top-info-text { font-size: 22px; }
+            #menu-over-coins.coin-hud-row {
+                align-items: center;
+            }
             #menu-over-coins .coin-count-value {
                 font-size: 23px;
-                height: 28px;
+                height: auto;
+                min-height: 0;
             }
             #menu-over-coins #menu-over-coin-count,
             #menu-over-coins .coin-count-value {
                 top: 0 !important;
-                margin-top: 5px !important;
-                align-items: flex-end;
+                margin-top: 0 !important;
+                align-items: center;
             }
             #menu-over-coins .coin-hud-icon {
                 top: 0;
                 width: 26px;
                 height: 26px;
                 font-size: 14px;
-                transform: none;
+                /* лёгкий сдвиг вниз — визуальный центр «$» в круге = центру цифр */
+                transform: translateY(1px);
             }
             #top-info-row { gap: 8px 12px; }
         }
@@ -1323,7 +1327,8 @@
         @media (max-width: 768px),
                screen and (orientation: landscape) and (max-height: 500px) and (min-width: 769px) and (max-width: 1024px) {
             #menu-total-coins {
-                --menu-coins-ty: 0.05em;
+                /* 0: иконка PNG и цифры в одной линии (flex align-items: center) */
+                --menu-coins-ty: 0;
                 left: 12px;
                 bottom: 14px;
                 gap: 8px;
@@ -1334,22 +1339,22 @@
             }
             #menu-total-coins-count {
                 font-size: 28px;
-                min-height: 40px;
+                min-height: 0;
             }
         }
         /* Планшет/тач 769–1200: не тянуть -0.14em с десктопа — та же логика, что у игрового HUD */
         @media (min-width: 769px) and (max-width: 1200px) and (pointer: coarse),
                (min-width: 769px) and (max-width: 1200px) and (hover: none) {
             #menu-total-coins {
-                --menu-coins-ty: 0.05em;
+                --menu-coins-ty: 0;
             }
             #menu-over-coins #menu-over-coin-count,
             #menu-over-coins .coin-count-value {
-                margin-top: 5px !important;
-                align-items: flex-end;
+                margin-top: 0 !important;
+                align-items: center;
             }
             #menu-over-coins .coin-hud-icon {
-                transform: none;
+                transform: translateY(1px);
             }
         }
 
