@@ -1047,11 +1047,11 @@
             #coin-hud-row .coin-count-value,
             #coin-hud-row #coin-count {
                 top: 0 !important;
-                margin-top: 5px !important;
-                align-items: flex-end;
+                margin-top: 0 !important;
+                align-items: center;
             }
             #coin-hud-row .coin-hud-icon {
-                top: 0;
+                top: -3px;
             }
         }
         @keyframes coinHudIconGlowPick {
@@ -1234,16 +1234,19 @@
             .boost-charge-icon { width: 20px; height: 20px; }
             .boost-charge-track { height: 4px; }
             .coin-hud-row { max-width: 136px; margin-top: -18px; margin-bottom: 6px; gap: 6px; }
+            /* Только игровой HUD: как на десктопе (-24), без опускания цифры (margin на #coin-count). */
+            #coin-hud-row.coin-hud-row {
+                margin-top: -24px;
+            }
             .coin-hud-row .coin-hud-icon { top: 0; }
-            /* margin-top во flex реально двигает цифры вниз (top в паре с align-items часто «не клеится») */
             #coin-hud-row .coin-count-value,
             #coin-hud-row #coin-count {
                 top: 0 !important;
-                margin-top: 6px !important;
-                align-items: flex-end;
+                margin-top: 0 !important;
+                align-items: center;
             }
             #coin-hud-row .coin-hud-icon {
-                top: 0;
+                top: -3px;
             }
             .coin-count-value { font-size: 22px; line-height: 1; height: 22px; top: -6px; }
             .coin-hud-icon { width: 22px; height: 22px; font-size: 12px; border-width: 2px; top: -3px; }
@@ -1482,11 +1485,11 @@
             }
             #coin-hud-row .coin-count-value,
             #coin-hud-row #coin-count {
-                margin-top: 5px !important;
-                align-items: flex-end !important;
+                margin-top: 0 !important;
+                align-items: center !important;
             }
             #coin-hud-row .coin-hud-icon {
-                top: 0 !important;
+                top: -3px !important;
             }
             /* Центр полоски HP совпадает с центром рядов буста и монет (~41px) */
             #hp-container {
