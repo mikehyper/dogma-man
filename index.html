@@ -1451,7 +1451,7 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: 24px;
+            bottom: 36px;
             z-index: 95;
             display: none;
             justify-content: space-between;
@@ -3137,8 +3137,8 @@ function isBoostActive() {
 }
 
 /** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст (max с запасом «чуть выше» фиолетовой кнопки); выше полосы направо — как раньше огонь. */
-const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 154;
-const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 56;
+const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 166;
+const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 68;
 
 function touchInMobileBoostZone(clientX, clientY) {
     const w = window.innerWidth, h = window.innerHeight;
