@@ -3136,16 +3136,16 @@ function isBoostActive() {
     return (shiftBoostKeyHeld || mobileCenterBoostHeld) && boostFuel > 0;
 }
 
-/** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст (max с запасом «чуть выше» фиолетовой кнопки); выше полосы направо — как раньше огонь. */
+/** Старые пороги по высоте — только для режима, когда #mobile-touch-nav скрыт; с видимыми кнопками буст берётся по getBoundingClientRect (фиол. круг), иначе верх жёлтой кнопки ловил «буст». */
 const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 166;
 const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 68;
 
 function touchInMobileBoostZone(clientX, clientY) {
-    const w = window.innerWidth, h = window.innerHeight;
-    const fromBottom = h - clientY;
-    return clientX >= w / 2
-        && fromBottom > MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM
-        && fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX;
+    if (!mobileTouchNavEl || mobileTouchNavEl.classList.contains('mobile-touch-nav--hidden')) return false;
+    const el = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--boost');
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
 }
 
 function touchInMobileFireZone(clientX, clientY) {
@@ -3153,8 +3153,16 @@ function touchInMobileFireZone(clientX, clientY) {
     if (clientX < w / 2) return false;
     if (touchInMobileBoostZone(clientX, clientY)) return false;
     const fromBottom = h - clientY;
-    if (fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX) return fromBottom <= MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM;
-    return true;
+    if (fromBottom > MOBILE_RIGHT_ACTION_BOTTOM_MAX) return true;
+    if (mobileTouchNavEl && !mobileTouchNavEl.classList.contains('mobile-touch-nav--hidden')) {
+        const fireEl = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--fire');
+        if (fireEl) {
+            const r = fireEl.getBoundingClientRect();
+            if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) return true;
+        }
+        return true;
+    }
+    return fromBottom <= MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM;
 }
 
 function syncMobileCenterBoostFromTouches(e) {
