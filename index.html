@@ -1214,10 +1214,12 @@
             .boost-charge-track { height: 4px; }
             .coin-hud-row { max-width: 136px; margin-top: -18px; margin-bottom: 6px; gap: 6px; }
             .coin-hud-row .coin-hud-icon { top: 0; }
-            #coin-hud-row .coin-count-value { top: -3px; }
-            /* Та же оптика, что на ПК: цифры ниже центра 22px-круга */
-            #coin-hud-row.coin-hud-row .coin-hud-icon {
-                top: 2px;
+            /* Игровой HUD: цифры и круг на одной визуальной линии (без top у числа — он ломал пару) */
+            #coin-hud-row .coin-count-value {
+                top: 0;
+            }
+            #coin-hud-row .coin-hud-icon {
+                top: 5px;
             }
             .coin-count-value { font-size: 22px; line-height: 1; height: 22px; top: -6px; }
             .coin-hud-icon { width: 22px; height: 22px; font-size: 12px; border-width: 2px; top: -3px; }
@@ -1418,6 +1420,9 @@
             .coin-hud-icon {
                 top: 0 !important;
                 align-self: center;
+            }
+            #coin-hud-row .coin-hud-icon {
+                top: 4px !important;
             }
             /* Центр полоски HP совпадает с центром рядов буста и монет (~41px) */
             #hp-container {
