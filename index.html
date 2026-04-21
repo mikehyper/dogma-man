@@ -1451,7 +1451,7 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: 36px;
+            bottom: 24px;
             z-index: 95;
             display: none;
             justify-content: space-between;
@@ -3136,48 +3136,25 @@ function isBoostActive() {
     return (shiftBoostKeyHeld || mobileCenterBoostHeld) && boostFuel > 0;
 }
 
-/** Старые пороги по высоте — только когда #mobile-touch-nav скрыт. С видимой панелью: буст — внутри фиол. круга (inset), огонь — расширенный прямоугольник с приоритетом над бустом. */
-const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 166;
-const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 68;
-const MOBILE_TOUCH_FIRE_PAD_X = 14;
-const MOBILE_TOUCH_FIRE_PAD_TOP = 6;
-const MOBILE_TOUCH_FIRE_PAD_BOTTOM = 18;
-const MOBILE_TOUCH_BOOST_INSET = 4;
-
-function touchInMobileFireHitExpanded(clientX, clientY) {
-    if (!mobileTouchNavEl || mobileTouchNavEl.classList.contains('mobile-touch-nav--hidden')) return false;
-    const el = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--fire');
-    if (!el) return false;
-    const r = el.getBoundingClientRect();
-    return clientX >= r.left - MOBILE_TOUCH_FIRE_PAD_X && clientX <= r.right + MOBILE_TOUCH_FIRE_PAD_X
-        && clientY >= r.top - MOBILE_TOUCH_FIRE_PAD_TOP && clientY <= r.bottom + MOBILE_TOUCH_FIRE_PAD_BOTTOM;
-}
+/** Правая половина, нижняя полоса: ниже порога — огонь, выше (до max) — буст (max с запасом «чуть выше» фиолетовой кнопки); выше полосы направо — как раньше огонь. */
+const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 154;
+const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 56;
 
 function touchInMobileBoostZone(clientX, clientY) {
-    if (touchInMobileFireHitExpanded(clientX, clientY)) return false;
-    if (!mobileTouchNavEl || mobileTouchNavEl.classList.contains('mobile-touch-nav--hidden')) return false;
-    const el = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--boost');
-    if (!el) return false;
-    const r = el.getBoundingClientRect();
-    const i = MOBILE_TOUCH_BOOST_INSET;
-    const left = r.left + i, right = r.right - i, top = r.top + i, bottom = r.bottom - i;
-    if (left < right && top < bottom) {
-        return clientX >= left && clientX <= right && clientY >= top && clientY <= bottom;
-    }
-    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+    const w = window.innerWidth, h = window.innerHeight;
+    const fromBottom = h - clientY;
+    return clientX >= w / 2
+        && fromBottom > MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM
+        && fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX;
 }
 
 function touchInMobileFireZone(clientX, clientY) {
     const w = window.innerWidth, h = window.innerHeight;
     if (clientX < w / 2) return false;
-    if (touchInMobileFireHitExpanded(clientX, clientY)) return true;
     if (touchInMobileBoostZone(clientX, clientY)) return false;
     const fromBottom = h - clientY;
-    if (fromBottom > MOBILE_RIGHT_ACTION_BOTTOM_MAX) return true;
-    if (mobileTouchNavEl && !mobileTouchNavEl.classList.contains('mobile-touch-nav--hidden')) {
-        return true;
-    }
-    return fromBottom <= MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM;
+    if (fromBottom <= MOBILE_RIGHT_ACTION_BOTTOM_MAX) return fromBottom <= MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM;
+    return true;
 }
 
 function syncMobileCenterBoostFromTouches(e) {
@@ -3865,13 +3842,8 @@ window.addEventListener('touchstart', (e) => {
     if (isMobileDevice) {
         const { prev, now } = syncMobileCenterBoostFromTouches(e);
         if (now && !prev && boostFuel > 0 && !isFirstRun && !isGameOver) { sounds.boost2.volume = 0.7; sounds.boost2.currentTime = 0; sounds.boost2.play(); }
-        const tFire = target && target.closest && target.closest('.mobile-touch-nav-zone--fire');
-        if (tFire) {
-            isFiring = true;
-            if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); }
-        } else if (touchX < w / 2) {
-            hero.jump();
-        } else if (touchInMobileFireZone(touchX, touchY)) {
+        if (touchX < w / 2) hero.jump();
+        else if (touchInMobileFireZone(touchX, touchY)) {
             isFiring = true;
             if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); }
         }
