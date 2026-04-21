@@ -519,6 +519,21 @@
         @keyframes popInStar { 0% { transform: translate(-283px, 51px) scale(0); } 70% { transform: translate(-283px, 51px) scale(1.1); } 100% { transform: translate(-283px, 51px) scale(1); } }
         @keyframes popInDgm { 0% { transform: translate(-305px, -184px) scale(0); } 70% { transform: translate(-305px, -184px) scale(1.1); } 100% { transform: translate(-305px, -184px) scale(1); } }
         @keyframes popInGlow { 0% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0); } 70% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); } 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); } }
+        @keyframes breatheInHeroVioletGlow {
+            0% { transform: translate(-50%, -46%) scale(0.90); opacity: 0; filter: blur(14px); }
+            42% { transform: translate(-50%, -46%) scale(1.06); opacity: 0.88; filter: blur(10px); }
+            68% { transform: translate(-50%, -46%) scale(0.99); opacity: 0.62; filter: blur(9px); }
+            100% { transform: translate(-50%, -46%) scale(1.02); opacity: 0.70; filter: blur(10px); }
+        }
+        @keyframes popInHeroWhiteGlow {
+            0% { transform: translate(calc(-50% - 26px), -50%) scale(0.86); opacity: 0; }
+            70% { transform: translate(calc(-50% - 26px), -50%) scale(1.05); opacity: 0.20; }
+            100% { transform: translate(calc(-50% - 26px), -50%) scale(1.00); opacity: 0.15; }
+        }
+        @keyframes pulseHeroWhiteGlow {
+            0%, 100% { transform: translate(calc(-50% - 26px), -50%) scale(0.98); opacity: 0.12; }
+            50% { transform: translate(calc(-50% - 26px), -50%) scale(1.06); opacity: 0.18; }
+        }
         #menu-logo-wrap {
             width: 700px;
             margin-bottom: -90px;
@@ -534,6 +549,7 @@
             position: relative;
             z-index: 12;
             display: block;
+            filter: url(#menu-logo-white-outline);
         }
         .menu-hero-wrap {
             position: relative;
@@ -541,6 +557,31 @@
             margin-top: 20px;
             margin-left: -50px;
             overflow: visible;
+        }
+        #menu-hero-violet-glow {
+            position: absolute;
+            left: 50%;
+            top: 52%;
+            width: 620px;
+            height: 620px;
+            /* чуть уводим центр назад, чтобы ореол торчал из-за силуэта, а не прятался под ним */
+            transform: translate(calc(-50% - 26px), -50%) scale(0.86);
+            z-index: 0; /* строго под героем внутри .menu-hero-wrap */
+            pointer-events: none;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 52% 46%,
+                    rgba(255, 255, 255, 0.40) 0%,
+                    rgba(255, 255, 255, 0.26) 22%,
+                    rgba(255, 255, 255, 0.14) 44%,
+                    rgba(255, 255, 255, 0.06) 60%,
+                    rgba(255, 255, 255, 0) 76%),
+                radial-gradient(circle at 52% 50%,
+                    rgba(255, 255, 255, 0.16) 0%,
+                    rgba(255, 255, 255, 0) 48%);
+            opacity: 0;
+            will-change: transform, opacity;
+            animation: popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), pulseHeroWhiteGlow 4.2s 1.0s infinite ease-in-out;
         }
         #menu-hero {
             width: 450px;
@@ -561,7 +602,7 @@
             left: calc(58% + 10px); 
             transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0); 
             pointer-events: none; 
-            opacity: 0.78; 
+            opacity: 0.42; 
             animation: popInGlow 0.6s 0.2s forwards, pulseGlow 2s 0.8s infinite ease-in-out; 
         }
         #menu-logo-pulse {
@@ -573,19 +614,81 @@
             z-index: 1;
             pointer-events: none;
             border-radius: 50%;
-            background: radial-gradient(ellipse at center, rgba(255, 251, 224, 0.88) 0%, rgba(255, 225, 141, 0.62) 24%, rgba(255, 199, 72, 0.3) 52%, rgba(255, 194, 64, 0.05) 74%, rgba(255, 194, 64, 0) 100%);
-            filter: blur(6px);
-            box-shadow: 0 0 56px rgba(255, 224, 128, 0.34);
+            background: radial-gradient(ellipse at center, rgba(255, 251, 224, 0.52) 0%, rgba(255, 225, 141, 0.32) 24%, rgba(255, 199, 72, 0.12) 52%, rgba(255, 194, 64, 0.02) 74%, rgba(255, 194, 64, 0) 100%);
+            filter: blur(4px);
+            box-shadow: 0 0 34px rgba(255, 224, 128, 0.14);
             transform: translate(-50%, -50%) scale(0);
             opacity: 0;
             animation: popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow 2.8s 0.8s infinite cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
         .decor-obj { position: absolute; z-index: 100; pointer-events: none; height: auto; }
-        #obj-cig { width: 162px; top: 50%; left: 58%; z-index: 14; transform: translate(101px, -176px) scale(0); animation: popInCig 0.5s 0.5s forwards; }
-        #obj-leaf { width: 125px; top: 50%; left: 58%; transform: translate(114px, 115px) scale(0); animation: popInLeaf 0.5s 0.7s forwards; }
-        #obj-star { width: 79px; top: 60%; left: 45%; transform: translate(-283px, 51px) scale(0); animation: popInStar 0.5s 0.8s forwards; }
-        #obj-dgm { width: 130px; top: 60%; left: 45%; transform: translate(-305px, -184px) scale(0); animation: popInDgm 0.5s 0.6s forwards; }
+        .decor-obj {
+            --objGlowColor: rgba(255, 255, 255, 0.50);
+            --glowAmp: 0.55;
+            --glowDur: 4.6s;
+            --glowDelay: -1.2s;
+            will-change: transform, filter, opacity;
+            filter:
+                drop-shadow(0 0 calc(1px * var(--glowAmp)) rgba(0, 0, 0, 0))
+                drop-shadow(0 0 calc(8px * var(--glowAmp)) var(--objGlowColor))
+                drop-shadow(0 0 calc(26px * var(--glowAmp)) var(--objGlowColor))
+                drop-shadow(0 0 calc(56px * var(--glowAmp)) rgba(255, 255, 255, 0.04));
+        }
+        #obj-cig {
+            --objGlowColor: rgba(255, 255, 255, 0.48);
+            width: 162px; top: 50%; left: 58%; z-index: 14; transform: translate(101px, -176px) scale(0);
+            animation: popInCig 0.5s 0.5s forwards, decorSoftPulse var(--glowDur) var(--glowDelay) infinite ease-in-out;
+        }
+        #obj-dgm {
+            --objGlowColor: rgba(178, 92, 255, 0.48);
+            width: 130px; top: 60%; left: 45%; transform: translate(-305px, -184px) scale(0);
+            animation: popInDgm 0.5s 0.6s forwards, decorSoftPulse var(--glowDur) var(--glowDelay) infinite ease-in-out;
+        }
+        #obj-leaf {
+            --objGlowColor: rgba(255, 160, 36, 0.46);
+            width: 125px; top: 50%; left: 58%; transform: translate(114px, 115px) scale(0);
+            animation: popInLeaf 0.5s 0.7s forwards, decorSoftPulse var(--glowDur) var(--glowDelay) infinite ease-in-out;
+        }
+        #obj-star {
+            --objGlowColor: rgba(255, 48, 48, 0.48);
+            width: 79px; top: 60%; left: 45%; transform: translate(-283px, 51px) scale(0);
+            animation: popInStar 0.5s 0.8s forwards, decorSoftPulse var(--glowDur) var(--glowDelay) infinite ease-in-out;
+        }
+        @keyframes decorSoftPulse {
+            /* выдох -> ноль */
+            0%, 100% {
+                opacity: 1;
+                filter:
+                    drop-shadow(0 0 0px rgba(0, 0, 0, 0))
+                    drop-shadow(0 0 0px rgba(0, 0, 0, 0))
+                    drop-shadow(0 0 0px rgba(0, 0, 0, 0));
+            }
+            /* начало вдоха */
+            22% {
+                opacity: 1;
+                filter:
+                    drop-shadow(0 0 calc(3px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(10px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(22px * var(--glowAmp)) var(--objGlowColor));
+            }
+            /* глубокий вдох (пик) */
+            46% {
+                opacity: 1;
+                filter:
+                    drop-shadow(0 0 calc(8px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(22px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(52px * var(--glowAmp)) var(--objGlowColor));
+            }
+            /* плавный выдох */
+            72% {
+                opacity: 1;
+                filter:
+                    drop-shadow(0 0 calc(2px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(7px * var(--glowAmp)) var(--objGlowColor))
+                    drop-shadow(0 0 calc(16px * var(--glowAmp)) var(--objGlowColor));
+            }
+        }
 
         #top-info-row {
             transform: scale(0);
@@ -642,27 +745,31 @@
         #final-score-display { transform: scale(0); animation: popInFinalScore 0.5s 1.0s forwards; margin-top: 10px; }
 
         @keyframes pulseGlow { 
-            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: 0.58; } 
-            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: 0.87; } 
+            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: 0.28; } 
+            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: 0.42; } 
+        }
+        @keyframes pulseHeroVioletGlow {
+            0%, 100% { transform: translate(-50%, -46%) scale(0.98); opacity: 0.56; filter: blur(9px); }
+            50% { transform: translate(-50%, -46%) scale(1.12); opacity: 0.92; filter: blur(13px); }
         }
         @keyframes pulseLogoGlow {
             0% {
                 transform: translate(-50%, -50%) scale(0.88);
-                opacity: 0.78;
+                opacity: 0.62;
             }
             58% {
                 transform: translate(-50%, -50%) scale(1.36);
-                opacity: 0.38;
+                opacity: 0.30;
             }
             100% {
                 transform: translate(-50%, -50%) scale(1.52);
-                opacity: 0.14;
+                opacity: 0.10;
             }
         }
         @keyframes popInLogoPulse {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            70% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.75; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.55; }
+            70% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.62; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.44; }
         }
         
         .menu-score-text { 
@@ -1182,6 +1289,18 @@
     </style>
 </head>
 <body>
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute; width:0; height:0; overflow:hidden">
+        <filter id="menu-logo-white-outline" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+            <!-- thickness: radius (px-like) -->
+            <feMorphology in="SourceAlpha" operator="dilate" radius="7" result="dilated" />
+            <feFlood flood-color="#ffffff" result="white" />
+            <feComposite in="white" in2="dilated" operator="in" result="outline" />
+            <feMerge>
+                <feMergeNode in="outline" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+    </svg>
     <div id="hp-container"><div id="hp-bar"></div></div>
     
     <div id="menu-overlay">
@@ -1220,6 +1339,7 @@
                 <img id="menu-logo" src="img/logo.png">
             </div>
             <div class="menu-hero-wrap" id="menu-hero-wrap">
+                <div id="menu-hero-violet-glow" aria-hidden="true"></div>
                 <img id="menu-hero" src="img/hero_menu.png" alt="">
             </div>
             <img id="obj-cig" class="decor-obj" src="img/cig_main.png">
@@ -2206,6 +2326,26 @@ window.addEventListener('DOMContentLoaded', () => {
         pointerY = 0;
     };
 
+    const randomizeDecorGlow = (el) => {
+        if (!el) return;
+        const dur = 3.2 + Math.random() * 3.8; // 3.2s..7.0s
+        const amp = 0.75 + Math.random() * 0.75; // 0.75..1.5
+        const delay = -(Math.random() * dur); // отрицательная фаза, чтобы сразу "рандомно" стартануло
+        el.style.setProperty('--glowDur', `${dur.toFixed(2)}s`);
+        el.style.setProperty('--glowAmp', `${amp.toFixed(2)}`);
+        el.style.setProperty('--glowDelay', `${delay.toFixed(2)}s`);
+    };
+
+    const startDecorRandomGlow = () => {
+        const ids = ['obj-cig', 'obj-leaf', 'obj-star', 'obj-dgm'];
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            // Важно: рандомизируем ОДИН раз на старт, иначе браузер перезапускает анимацию и появляются "прыжки".
+            randomizeDecorGlow(el);
+        });
+    };
+
     const animateMenuParallax = () => {
         const now = performance.now();
         const isIdle = !hasPointerInput || (now - lastInputAt > IDLE_DELAY_MS);
@@ -2240,10 +2380,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            if (menuHeroWrapEl) {
-                const heroPulseScale = 1 + Math.sin(now * 0.00115) * 0.028;
-                menuHeroWrapEl.style.scale = heroPulseScale.toFixed(4);
-            }
         }
 
         requestAnimationFrame(animateMenuParallax);
@@ -2255,6 +2391,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
     window.addEventListener('touchend', resetMenuParallax, { passive: true });
     animateMenuParallax();
+    startDecorRandomGlow();
 });
 
 // Блокируем double-tap zoom на мобильных, не трогая масштаб всей страницы.
