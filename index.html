@@ -1301,6 +1301,8 @@
             #top-info-text { font-size: 22px; }
             #menu-over-coins.coin-hud-row {
                 align-items: center;
+                /* Вровень с «ДИСТАНЦИЯ:» (иконка/цифра визуально сидели слишком низко) */
+                transform: translateY(-3px);
             }
             #menu-over-coins .coin-count-value {
                 font-size: 23px;
@@ -1312,13 +1314,15 @@
                 top: 0 !important;
                 margin-top: 0 !important;
                 align-items: center;
-                transform: translateY(3px);
+                align-self: center;
+                transform: none;
             }
             #menu-over-coins .coin-hud-icon {
                 top: 0;
                 width: 26px;
                 height: 26px;
                 font-size: 14px;
+                align-self: center;
                 transform: none;
             }
             #top-info-row { gap: 8px 12px; }
@@ -1349,13 +1353,18 @@
             #menu-total-coins {
                 --menu-coins-ty: 0.06em;
             }
+            #menu-over-coins.coin-hud-row {
+                transform: translateY(-3px);
+            }
             #menu-over-coins #menu-over-coin-count,
             #menu-over-coins .coin-count-value {
                 margin-top: 0 !important;
                 align-items: center;
-                transform: translateY(3px);
+                align-self: center;
+                transform: none;
             }
             #menu-over-coins .coin-hud-icon {
+                align-self: center;
                 transform: none;
             }
         }
