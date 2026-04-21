@@ -16,6 +16,7 @@
     <meta name="twitter:image" content="img/dogma_prew.png">
 
     <link rel="icon" href="img/favicon.png" type="image/png">
+    <link rel="preload" as="image" href="img/glow.png">
     <style>
         @font-face {
             font-family: 'Pribambas';
@@ -1628,15 +1629,15 @@
         <div class="menu-vignette"></div>
         <div class="menu-composition" id="menu-comp">
             <div id="menu-glow-par" class="menu-glow-par" aria-hidden="true">
-                <img id="menu-glow" src="img/glow.png" alt="">
+                <img id="menu-glow" src="img/glow.png" alt="" fetchpriority="high" decoding="sync">
             </div>
             <div id="menu-logo-wrap">
                 <div id="menu-logo-pulse"></div>
-                <img id="menu-logo" src="img/logo.png">
+                <img id="menu-logo" src="img/logo.png" alt="" fetchpriority="high" decoding="sync">
             </div>
             <div class="menu-hero-wrap" id="menu-hero-wrap">
                 <div id="menu-hero-violet-glow" aria-hidden="true"></div>
-                <img id="menu-hero" src="img/hero_menu.png" alt="">
+                <img id="menu-hero" src="img/hero_menu.png" alt="" fetchpriority="high" decoding="sync">
             </div>
             <img id="obj-cig" class="decor-obj" src="img/cig_main.png">
             <img id="obj-leaf" class="decor-obj" src="img/leaf_main.png">
@@ -2642,7 +2643,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const useSoftMenuBackdropGlow = isMobileDevice
             || (typeof matchMedia !== 'undefined' && matchMedia('(max-width: 768px)').matches);
 
-        const wireMenuBackdropMobile = (el, popInName, popInValue, loopName, minOp, maxOp) => {
+        /* Моб. свечения: (1) glow.png + меню-графика — preload/fetchpriority; (2) menu-glow — popIn только transform, пульс только opacity, без паузы до animationend; (3) герой/лого — пульс по таймауту = конец popIn, без «хвоста» события. */
+        const wireMenuBackdropMobile = (el, popInValue, loopName, startLoopMs, minOp, maxOp) => {
             if (!el) return;
             const dur = 3.2 + Math.random() * 3.8;
             const phase = Math.random() * dur;
@@ -2655,26 +2657,29 @@ window.addEventListener('DOMContentLoaded', () => {
             const applyLoop = () => {
                 if (finished) return;
                 finished = true;
-                el.removeEventListener('animationend', onEnd);
-                if (failsafeId) clearTimeout(failsafeId);
+                if (loopTid) clearTimeout(loopTid);
                 el.style.setProperty('animation', `${loopName} ${dur.toFixed(2)}s ease-in-out -${phase.toFixed(2)}s infinite`);
             };
-            const onEnd = (e) => {
-                if (e.target !== el || e.animationName !== popInName) return;
-                applyLoop();
-            };
-            const failsafeId = setTimeout(applyLoop, 2600);
-            el.addEventListener('animationend', onEnd);
+            const loopTid = setTimeout(applyLoop, startLoopMs);
             el.style.setProperty('animation', popInValue);
         };
 
         if (useSoftMenuBackdropGlow) {
-            const heroV = document.getElementById('menu-hero-violet-glow');
-            wireMenuBackdropMobile(heroV, 'popInHeroWhiteGlow', 'popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1)', 'pulseMenuHeroWhiteGlowMobile', (a) => 0.12 * a, (a) => 0.19 * a);
             const menuGlow = document.getElementById('menu-glow');
-            wireMenuBackdropMobile(menuGlow, 'popInGlow', 'popInGlow 0.6s 0.2s forwards', 'pulseMenuGlowImageMobile', (a) => 0.30 * a, (a) => 0.40 * a);
+            if (menuGlow) {
+                const dur = 3.2 + Math.random() * 3.8;
+                const phase = Math.random() * dur;
+                const amp = 0.75 + Math.random() * 0.75;
+                menuGlow.style.setProperty('--glowAmp', amp.toFixed(2));
+                menuGlow.style.setProperty('--glowA', (0.30 * amp).toFixed(4));
+                menuGlow.style.setProperty('--glowB', (0.40 * amp).toFixed(4));
+                /* popInGlow крутит только transform; пульс — opacity, конфликта нет — старт с первого кадра */
+                menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, pulseMenuGlowImageMobile ${dur.toFixed(2)}s ease-in-out -${phase.toFixed(2)}s infinite`);
+            }
+            const heroV = document.getElementById('menu-hero-violet-glow');
+            wireMenuBackdropMobile(heroV, 'popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1)', 'pulseMenuHeroWhiteGlowMobile', 1180, (a) => 0.12 * a, (a) => 0.19 * a);
             const logoPulse = document.getElementById('menu-logo-pulse');
-            wireMenuBackdropMobile(logoPulse, 'popInLogoPulse', 'popInLogoPulse 0.6s 0.2s forwards', 'pulseMenuLogoPulseMobile', (a) => 0.40 * a, (a) => 0.52 * a);
+            wireMenuBackdropMobile(logoPulse, 'popInLogoPulse 0.6s 0.2s forwards', 'pulseMenuLogoPulseMobile', 800, (a) => 0.40 * a, (a) => 0.52 * a);
             return;
         }
 
