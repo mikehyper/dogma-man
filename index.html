@@ -1024,13 +1024,33 @@
             position: relative;
             top: -8px;
         }
-        /* Счётчик в игре: цифры визуально «ниже» геометрического центра 28px — кружок чуть вниз */
-        #coin-hud-row .coin-count-value {
-            top: -5px;
+        /* Счётчик в игре: по умолчанию без -5px; сдвиг вверх только min-width 769 (мышь, широкое окно) */
+        #coin-hud-row .coin-count-value,
+        #coin-hud-row #coin-count {
+            top: 0;
+            margin-top: 0;
         }
         @media (min-width: 769px) {
+            #coin-hud-row .coin-count-value,
+            #coin-hud-row #coin-count {
+                top: -5px;
+            }
             #coin-hud-row .coin-hud-icon {
                 top: -1px;
+            }
+        }
+        /* Когда ширина попадает под min-width:769, снова включается top:-5; на тач (планшет, альбом) убираем, опускаем margin.
+           hover:none ловит iOS/Safari, где pointer:coarse бывает неточным. */
+        @media (min-width: 769px) and (max-width: 1200px) and (pointer: coarse),
+               (min-width: 769px) and (max-width: 1200px) and (hover: none) {
+            #coin-hud-row .coin-count-value,
+            #coin-hud-row #coin-count {
+                top: 0 !important;
+                margin-top: 5px !important;
+                align-items: flex-end;
+            }
+            #coin-hud-row .coin-hud-icon {
+                top: 0;
             }
         }
         @keyframes coinHudIconGlowPick {
@@ -1214,9 +1234,11 @@
             .boost-charge-track { height: 4px; }
             .coin-hud-row { max-width: 136px; margin-top: -18px; margin-bottom: 6px; gap: 6px; }
             .coin-hud-row .coin-hud-icon { top: 0; }
-            /* Игровой HUD: цифры визуально сидят высоко в 22px-боксе — опускаем + совмещаем с кругом */
-            #coin-hud-row .coin-count-value {
-                top: 4px;
+            /* margin-top во flex реально двигает цифры вниз (top в паре с align-items часто «не клеится») */
+            #coin-hud-row .coin-count-value,
+            #coin-hud-row #coin-count {
+                top: 0 !important;
+                margin-top: 6px !important;
                 align-items: flex-end;
             }
             #coin-hud-row .coin-hud-icon {
@@ -1414,16 +1436,19 @@
                 align-items: center;
             }
             .coin-count-value,
-            #coin-hud-row .coin-count-value {
+            #coin-hud-row .coin-count-value,
+            #coin-hud-row #coin-count {
                 top: 0 !important;
+                margin-top: 0 !important;
                 align-self: center;
             }
             .coin-hud-icon {
                 top: 0 !important;
                 align-self: center;
             }
-            #coin-hud-row .coin-count-value {
-                top: 4px !important;
+            #coin-hud-row .coin-count-value,
+            #coin-hud-row #coin-count {
+                margin-top: 5px !important;
                 align-items: flex-end !important;
             }
             #coin-hud-row .coin-hud-icon {
