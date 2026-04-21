@@ -842,12 +842,6 @@
                 will-change: transform, opacity;
                 backface-visibility: hidden;
             }
-            #menu-hero-violet-glow,
-            #menu-glow,
-            #menu-logo-pulse {
-                -webkit-backface-visibility: hidden;
-                backface-visibility: hidden;
-            }
             #menu-logo-pulse {
                 filter: blur(2px);
                 box-shadow: 0 0 20px rgba(255, 224, 128, 0.1);
@@ -942,35 +936,35 @@
                 opacity: calc(0.10 * var(--glowAmp, 1));
             }
         }
-        /* Моб. WebKit: без анимации transform у свечений — иначе с параллаксом/слоями «рвёт» как гирлянда */
+        /* Моб. WebKit: transform в цикле не качаем; opacity через --glowA/--glowB (без calc в @keyframes). Пульс цепляем после popIn, иначе две анимации на opacity дают «вкл/выкл». */
         @keyframes pulseMenuHeroWhiteGlowMobile {
             0%, 100% {
                 transform: translate(calc(-50% - 26px), -50%) scale(1);
-                opacity: calc(0.12 * var(--glowAmp, 1));
+                opacity: var(--glowA, 0.15);
             }
             50% {
                 transform: translate(calc(-50% - 26px), -50%) scale(1);
-                opacity: calc(0.19 * var(--glowAmp, 1));
+                opacity: var(--glowB, 0.2);
             }
         }
         @keyframes pulseMenuGlowImageMobile {
             0%, 100% {
                 transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
-                opacity: calc(0.30 * var(--glowAmp, 1));
+                opacity: var(--glowA, 0.3);
             }
             50% {
                 transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
-                opacity: calc(0.40 * var(--glowAmp, 1));
+                opacity: var(--glowB, 0.4);
             }
         }
         @keyframes pulseMenuLogoPulseMobile {
             0%, 100% {
                 transform: translate(-50%, -50%) scale(1);
-                opacity: calc(0.40 * var(--glowAmp, 1));
+                opacity: var(--glowA, 0.4);
             }
             50% {
                 transform: translate(-50%, -50%) scale(1);
-                opacity: calc(0.52 * var(--glowAmp, 1));
+                opacity: var(--glowB, 0.52);
             }
         }
         @keyframes popInLogoPulse {
@@ -2647,6 +2641,43 @@ window.addEventListener('DOMContentLoaded', () => {
     const randomizeMenuBackdropAnimations = () => {
         const useSoftMenuBackdropGlow = isMobileDevice
             || (typeof matchMedia !== 'undefined' && matchMedia('(max-width: 768px)').matches);
+
+        const wireMenuBackdropMobile = (el, popInName, popInValue, loopName, minOp, maxOp) => {
+            if (!el) return;
+            const dur = 3.2 + Math.random() * 3.8;
+            const phase = Math.random() * dur;
+            const amp = 0.75 + Math.random() * 0.75;
+            el.style.setProperty('--glowAmp', amp.toFixed(2));
+            el.style.setProperty('--glowA', (minOp(amp)).toFixed(4));
+            el.style.setProperty('--glowB', (maxOp(amp)).toFixed(4));
+
+            let finished = false;
+            const applyLoop = () => {
+                if (finished) return;
+                finished = true;
+                el.removeEventListener('animationend', onEnd);
+                if (failsafeId) clearTimeout(failsafeId);
+                el.style.setProperty('animation', `${loopName} ${dur.toFixed(2)}s ease-in-out -${phase.toFixed(2)}s infinite`);
+            };
+            const onEnd = (e) => {
+                if (e.target !== el || e.animationName !== popInName) return;
+                applyLoop();
+            };
+            const failsafeId = setTimeout(applyLoop, 2600);
+            el.addEventListener('animationend', onEnd);
+            el.style.setProperty('animation', popInValue);
+        };
+
+        if (useSoftMenuBackdropGlow) {
+            const heroV = document.getElementById('menu-hero-violet-glow');
+            wireMenuBackdropMobile(heroV, 'popInHeroWhiteGlow', 'popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1)', 'pulseMenuHeroWhiteGlowMobile', (a) => 0.12 * a, (a) => 0.19 * a);
+            const menuGlow = document.getElementById('menu-glow');
+            wireMenuBackdropMobile(menuGlow, 'popInGlow', 'popInGlow 0.6s 0.2s forwards', 'pulseMenuGlowImageMobile', (a) => 0.30 * a, (a) => 0.40 * a);
+            const logoPulse = document.getElementById('menu-logo-pulse');
+            wireMenuBackdropMobile(logoPulse, 'popInLogoPulse', 'popInLogoPulse 0.6s 0.2s forwards', 'pulseMenuLogoPulseMobile', (a) => 0.40 * a, (a) => 0.52 * a);
+            return;
+        }
+
         const heroV = document.getElementById('menu-hero-violet-glow');
         if (heroV) {
             const dur = 3.2 + Math.random() * 3.8;
@@ -2654,10 +2685,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             heroV.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 1 + delay;
-            const heroLoop = useSoftMenuBackdropGlow
-                ? `pulseMenuHeroWhiteGlowMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
-                : `pulseHeroWhiteGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`;
-            heroV.style.setProperty('animation', `popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), ${heroLoop}`);
+            heroV.style.setProperty('animation', `popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), pulseHeroWhiteGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
         }
         const menuGlow = document.getElementById('menu-glow');
         if (menuGlow) {
@@ -2666,10 +2694,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             menuGlow.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 0.8 + delay;
-            const glowLoop = useSoftMenuBackdropGlow
-                ? `pulseMenuGlowImageMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
-                : `pulseGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`;
-            menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, ${glowLoop}`);
+            menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, pulseGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
         }
         const logoPulse = document.getElementById('menu-logo-pulse');
         if (logoPulse) {
@@ -2678,10 +2703,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             logoPulse.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 0.8 + delay;
-            const logoLoop = useSoftMenuBackdropGlow
-                ? `pulseMenuLogoPulseMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
-                : `pulseLogoGlow ${dur.toFixed(2)}s cubic-bezier(0.22, 0.61, 0.36, 1) ${d2.toFixed(2)}s infinite`;
-            logoPulse.style.setProperty('animation', `popInLogoPulse 0.6s 0.2s forwards, ${logoLoop}`);
+            logoPulse.style.setProperty('animation', `popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow ${dur.toFixed(2)}s cubic-bezier(0.22, 0.61, 0.36, 1) ${d2.toFixed(2)}s infinite`);
         }
     };
 
