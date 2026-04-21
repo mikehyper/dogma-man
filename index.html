@@ -842,6 +842,16 @@
                 will-change: transform, opacity;
                 backface-visibility: hidden;
             }
+            #menu-hero-violet-glow,
+            #menu-glow,
+            #menu-logo-pulse {
+                -webkit-backface-visibility: hidden;
+                backface-visibility: hidden;
+            }
+            #menu-logo-pulse {
+                filter: blur(2px);
+                box-shadow: 0 0 20px rgba(255, 224, 128, 0.1);
+            }
             #obj-cig {
                 animation: popInCig 0.5s 0.5s forwards, decorGlowPulseStaticFilter var(--glowDur) var(--glowDelay) infinite ease-in-out;
             }
@@ -930,6 +940,37 @@
             100% {
                 transform: translate(-50%, -50%) scale(1.52);
                 opacity: calc(0.10 * var(--glowAmp, 1));
+            }
+        }
+        /* Моб. WebKit: без анимации transform у свечений — иначе с параллаксом/слоями «рвёт» как гирлянда */
+        @keyframes pulseMenuHeroWhiteGlowMobile {
+            0%, 100% {
+                transform: translate(calc(-50% - 26px), -50%) scale(1);
+                opacity: calc(0.12 * var(--glowAmp, 1));
+            }
+            50% {
+                transform: translate(calc(-50% - 26px), -50%) scale(1);
+                opacity: calc(0.19 * var(--glowAmp, 1));
+            }
+        }
+        @keyframes pulseMenuGlowImageMobile {
+            0%, 100% {
+                transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
+                opacity: calc(0.30 * var(--glowAmp, 1));
+            }
+            50% {
+                transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
+                opacity: calc(0.40 * var(--glowAmp, 1));
+            }
+        }
+        @keyframes pulseMenuLogoPulseMobile {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: calc(0.40 * var(--glowAmp, 1));
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: calc(0.52 * var(--glowAmp, 1));
             }
         }
         @keyframes popInLogoPulse {
@@ -2604,6 +2645,8 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     const randomizeMenuBackdropAnimations = () => {
+        const useSoftMenuBackdropGlow = isMobileDevice
+            || (typeof matchMedia !== 'undefined' && matchMedia('(max-width: 768px)').matches);
         const heroV = document.getElementById('menu-hero-violet-glow');
         if (heroV) {
             const dur = 3.2 + Math.random() * 3.8;
@@ -2611,7 +2654,10 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             heroV.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 1 + delay;
-            heroV.style.setProperty('animation', `popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), pulseHeroWhiteGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
+            const heroLoop = useSoftMenuBackdropGlow
+                ? `pulseMenuHeroWhiteGlowMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
+                : `pulseHeroWhiteGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`;
+            heroV.style.setProperty('animation', `popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), ${heroLoop}`);
         }
         const menuGlow = document.getElementById('menu-glow');
         if (menuGlow) {
@@ -2620,7 +2666,10 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             menuGlow.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 0.8 + delay;
-            menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, pulseGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
+            const glowLoop = useSoftMenuBackdropGlow
+                ? `pulseMenuGlowImageMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
+                : `pulseGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`;
+            menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, ${glowLoop}`);
         }
         const logoPulse = document.getElementById('menu-logo-pulse');
         if (logoPulse) {
@@ -2629,7 +2678,10 @@ window.addEventListener('DOMContentLoaded', () => {
             const amp = 0.75 + Math.random() * 0.75;
             logoPulse.style.setProperty('--glowAmp', amp.toFixed(2));
             const d2 = 0.8 + delay;
-            logoPulse.style.setProperty('animation', `popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow ${dur.toFixed(2)}s cubic-bezier(0.22, 0.61, 0.36, 1) ${d2.toFixed(2)}s infinite`);
+            const logoLoop = useSoftMenuBackdropGlow
+                ? `pulseMenuLogoPulseMobile ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`
+                : `pulseLogoGlow ${dur.toFixed(2)}s cubic-bezier(0.22, 0.61, 0.36, 1) ${d2.toFixed(2)}s infinite`;
+            logoPulse.style.setProperty('animation', `popInLogoPulse 0.6s 0.2s forwards, ${logoLoop}`);
         }
     };
 
