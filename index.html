@@ -310,14 +310,14 @@
             align-items: flex-start;
             gap: 10px;
         }
-        /* Топ бойцов: заголовок + поиск и крестик в одной строке грида */
+        /* Топ бойцов (моб.): надпись сверху, поиск сразу под ней на всю ширину */
         #mobile-score-screen .modal-box > .score-header-row {
             grid-row: 1;
             grid-column: 1;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 10px;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -329,13 +329,17 @@
             max-width: none;
         }
         #mobile-score-screen .search-container {
-            width: auto;
-            flex: 0 0 auto;
+            width: 100%;
+            max-width: none;
             min-width: 0;
-            max-width: 200px;
+            flex: 0 0 auto;
             display: flex;
             align-items: center;
-            margin-left: auto;
+            margin-left: 0;
+        }
+        #mobile-score-screen .search-container input {
+            width: 100%;
+            box-sizing: border-box;
         }
         #mobile-score-screen.mobile-screen {
             overflow: auto;
@@ -625,6 +629,7 @@
         }
         #mobile-score-screen .score-header-row h2 {
             font-size: 40px;
+            transform: none;
         }
         .stats-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
         .js-stat-row {
@@ -657,8 +662,8 @@
             100% { transform: translate(calc(-50% - 26px), -50%) scale(1.00); opacity: 0.15; }
         }
         @keyframes pulseHeroWhiteGlow {
-            0%, 100% { transform: translate(calc(-50% - 26px), -50%) scale(0.98); opacity: 0.12; }
-            50% { transform: translate(calc(-50% - 26px), -50%) scale(1.06); opacity: 0.18; }
+            0%, 100% { transform: translate(calc(-50% - 26px), -50%) scale(0.98); opacity: calc(0.12 * var(--glowAmp, 1)); }
+            50% { transform: translate(calc(-50% - 26px), -50%) scale(1.06); opacity: calc(0.18 * var(--glowAmp, 1)); }
         }
         #menu-logo-wrap {
             width: 700px;
@@ -685,6 +690,7 @@
             overflow: visible;
         }
         #menu-hero-violet-glow {
+            --glowAmp: 1;
             position: absolute;
             left: 50%;
             top: 52%;
@@ -707,7 +713,6 @@
                     rgba(255, 255, 255, 0) 48%);
             opacity: 0;
             will-change: transform, opacity;
-            animation: popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), pulseHeroWhiteGlow 4.2s 1.0s infinite ease-in-out;
         }
         #menu-hero {
             width: 450px;
@@ -718,20 +723,31 @@
             transform: scale(0);
             animation: popInCenter 0.5s 0.3s cubic-bezier(0.17, 0.67, 0.83, 1) forwards;
         }
-        #menu-logo-wrap, #menu-logo, .menu-hero-wrap, #menu-hero, #menu-glow, #menu-logo-pulse, #obj-cig, #obj-leaf, #obj-star, #obj-dgm { will-change: translate; }
-        
-        #menu-glow { 
-            position: absolute; 
-            width: 510px; 
-            height: auto; z-index: 2; 
-            top: 50%; 
-            left: calc(58% + 10px); 
-            transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0); 
-            pointer-events: none; 
-            opacity: 0.42; 
-            animation: popInGlow 0.6s 0.2s forwards, pulseGlow 2s 0.8s infinite ease-in-out; 
+        #menu-logo-wrap, #menu-logo, .menu-hero-wrap, #menu-hero, #menu-glow-par, #menu-glow, #menu-logo-pulse, #obj-cig, #obj-leaf, #obj-star, #obj-dgm { will-change: translate; }
+        #menu-glow-par {
+            position: absolute;
+            z-index: 2;
+            top: 50%;
+            left: calc(58% + 10px);
+            width: 0;
+            height: 0;
+            overflow: visible;
+            pointer-events: none;
+        }
+        #menu-glow {
+            --glowAmp: 1;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 510px;
+            height: auto;
+            margin: 0;
+            transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0);
+            pointer-events: none;
+            opacity: 0.42;
         }
         #menu-logo-pulse {
+            --glowAmp: 1;
             position: absolute;
             top: 52%;
             left: 50%;
@@ -745,7 +761,6 @@
             box-shadow: 0 0 34px rgba(255, 224, 128, 0.14);
             transform: translate(-50%, -50%) scale(0);
             opacity: 0;
-            animation: popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow 2.8s 0.8s infinite cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
         .decor-obj { position: absolute; z-index: 100; pointer-events: none; height: auto; }
@@ -763,7 +778,8 @@
         }
         #obj-cig {
             --objGlowColor: rgba(255, 255, 255, 0.48);
-            width: 162px; top: 50%; left: 58%; z-index: 14; transform: translate(101px, -176px) scale(0);
+            width: 162px; top: 50%; left: 58%; z-index: 14;
+            transform: translate(101px, -176px) scale(0);
             animation: popInCig 0.5s 0.5s forwards, decorSoftPulse var(--glowDur) var(--glowDelay) infinite ease-in-out;
         }
         #obj-dgm {
@@ -870,9 +886,9 @@
         }
         #final-score-display { transform: scale(0); animation: popInFinalScore 0.5s 1.0s forwards; margin-top: 10px; }
 
-        @keyframes pulseGlow { 
-            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: 0.28; } 
-            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: 0.42; } 
+        @keyframes pulseGlow {
+            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: calc(0.28 * var(--glowAmp, 1)); }
+            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: calc(0.42 * var(--glowAmp, 1)); }
         }
         @keyframes pulseHeroVioletGlow {
             0%, 100% { transform: translate(-50%, -46%) scale(0.98); opacity: 0.56; filter: blur(9px); }
@@ -881,15 +897,15 @@
         @keyframes pulseLogoGlow {
             0% {
                 transform: translate(-50%, -50%) scale(0.88);
-                opacity: 0.62;
+                opacity: calc(0.62 * var(--glowAmp, 1));
             }
             58% {
                 transform: translate(-50%, -50%) scale(1.36);
-                opacity: 0.30;
+                opacity: calc(0.30 * var(--glowAmp, 1));
             }
             100% {
                 transform: translate(-50%, -50%) scale(1.52);
-                opacity: 0.10;
+                opacity: calc(0.10 * var(--glowAmp, 1));
             }
         }
         @keyframes popInLogoPulse {
@@ -1545,7 +1561,9 @@
         <svg id="rays-container" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g id="rays-group" transform="translate(500, 500)"></g></svg>
         <div class="menu-vignette"></div>
         <div class="menu-composition" id="menu-comp">
-            <img id="menu-glow" src="img/glow.png">
+            <div id="menu-glow-par" class="menu-glow-par" aria-hidden="true">
+                <img id="menu-glow" src="img/glow.png" alt="">
+            </div>
             <div id="menu-logo-wrap">
                 <div id="menu-logo-pulse"></div>
                 <img id="menu-logo" src="img/logo.png">
@@ -2513,7 +2531,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return st.display !== 'none' && parseFloat(st.opacity) > 0.02;
     };
     const parallaxLayers = [
-        { el: document.getElementById('menu-glow'), strength: 11 },
+        { el: document.getElementById('menu-glow-par'), strength: 11 },
         { el: document.getElementById('menu-logo'), strength: 15 },
         { el: menuHeroWrapEl, strength: 28 },
         { el: document.getElementById('obj-cig'), strength: 28, driftX: 0.22, driftY: 0.14, speedX: 0.00043, speedY: 0.00037, phase: 0.3, rotAmp: 0.8, rotSpeed: 0.00055, rotPhase: 0.4, pulseAmp: 0.012, pulseSpeed: 0.00110, pulsePhase: 0.2 },
@@ -2554,7 +2572,38 @@ window.addEventListener('DOMContentLoaded', () => {
         el.style.setProperty('--glowDelay', `${delay.toFixed(2)}s`);
     };
 
+    const randomizeMenuBackdropAnimations = () => {
+        const heroV = document.getElementById('menu-hero-violet-glow');
+        if (heroV) {
+            const dur = 3.2 + Math.random() * 3.8;
+            const delay = -(Math.random() * dur);
+            const amp = 0.75 + Math.random() * 0.75;
+            heroV.style.setProperty('--glowAmp', amp.toFixed(2));
+            const d2 = 1 + delay;
+            heroV.style.setProperty('animation', `popInHeroWhiteGlow 0.9s 0.28s forwards cubic-bezier(0.22, 0.61, 0.36, 1), pulseHeroWhiteGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
+        }
+        const menuGlow = document.getElementById('menu-glow');
+        if (menuGlow) {
+            const dur = 3.2 + Math.random() * 3.8;
+            const delay = -(Math.random() * dur);
+            const amp = 0.75 + Math.random() * 0.75;
+            menuGlow.style.setProperty('--glowAmp', amp.toFixed(2));
+            const d2 = 0.8 + delay;
+            menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, pulseGlow ${dur.toFixed(2)}s ease-in-out ${d2.toFixed(2)}s infinite`);
+        }
+        const logoPulse = document.getElementById('menu-logo-pulse');
+        if (logoPulse) {
+            const dur = 3.2 + Math.random() * 3.8;
+            const delay = -(Math.random() * dur);
+            const amp = 0.75 + Math.random() * 0.75;
+            logoPulse.style.setProperty('--glowAmp', amp.toFixed(2));
+            const d2 = 0.8 + delay;
+            logoPulse.style.setProperty('animation', `popInLogoPulse 0.6s 0.2s forwards, pulseLogoGlow ${dur.toFixed(2)}s cubic-bezier(0.22, 0.61, 0.36, 1) ${d2.toFixed(2)}s infinite`);
+        }
+    };
+
     const startDecorRandomGlow = () => {
+        randomizeMenuBackdropAnimations();
         const ids = ['obj-cig', 'obj-leaf', 'obj-star', 'obj-dgm'];
         ids.forEach((id) => {
             const el = document.getElementById(id);
