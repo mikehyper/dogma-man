@@ -1423,7 +1423,7 @@
                 flex-wrap: nowrap;
                 white-space: nowrap;
                 letter-spacing: -0.025em;
-                font-size: min(56px, max(30px, calc((100vw - 32px) * 0.132)));
+                font-size: min(58px, max(30px, calc((100vw - 32px) * 0.142)));
             }
             .killed-container { font-size: 32px; }
             /* Подсказка тача: одна строка, шрифт подгоняется под ширину. */
@@ -2879,9 +2879,24 @@ const sounds = {
 if (isMobileDevice) { for (let key in sounds) { sounds[key].muted = true; sounds[key].volume = 0; sounds[key].play = function() { return Promise.resolve(); }; } }
 
 let mainPlaylist = [sounds.m1, sounds.m2, sounds.m3], currentTrackIdx = Math.floor(Math.random() * mainPlaylist.length), currentTrack = mainPlaylist[currentTrackIdx];
+function playCurrentMainTrack(opts) {
+    if (isMobileDevice) return;
+    const resetTime = opts && opts.resetTime;
+    mainPlaylist.forEach((t) => { if (t !== currentTrack) { try { t.pause(); } catch (e) {} } });
+    currentTrack.muted = false;
+    currentTrack.volume = 0.3;
+    if (resetTime) currentTrack.currentTime = 0;
+    const p = currentTrack.play();
+    if (p && typeof p.catch === 'function') p.catch(function () {});
+}
 mainPlaylist.forEach((track) => {
     if (!isMobileDevice) track.volume = 0.3;
-    track.addEventListener('ended', () => { currentTrackIdx = (currentTrackIdx + 1) % mainPlaylist.length; currentTrack = mainPlaylist[currentTrackIdx]; currentTrack.currentTime = 0; currentTrack.play(); });
+    track.addEventListener('ended', () => {
+        currentTrackIdx = (currentTrackIdx + 1) % mainPlaylist.length;
+        currentTrack = mainPlaylist[currentTrackIdx];
+        currentTrack.currentTime = 0;
+        playCurrentMainTrack({ resetTime: false });
+    });
 });
 
 if (!isMobileDevice) { sounds.bg.loop = true; sounds.bg.volume = 0.6; sounds.jump.volume = 0.5; sounds.land.volume = 0.9; sounds.shoot.volume = 0.6; sounds.death_enemy.volume = 0.8; sounds.life.volume = 0.6; sounds.shield.volume = 0.6; sounds.ammo.volume = 0.9; sounds.super.volume = 0.6; sounds.boost.volume = 0.7; sounds.boost2.volume = 0.7; sounds.cool.volume = 1; sounds.death.volume = 0.6; sounds.woosh.loop = true; sounds.woosh.volume = 0.4; sounds.power.loop = true; sounds.power.volume = 0.4; sounds.ice.volume = 0.8; sounds.shh.volume = 0.9; sounds.coin.volume = 0.45; sounds.up.volume = 0.2; sounds.clock.volume = 0.55; sounds.alive.volume = 0.65; }
@@ -3015,8 +3030,10 @@ function performReviveFromDeath() {
     incrementLifetimeRevivesCloud();
     if (!isMobileDevice) { sounds.alive.currentTime = 0; sounds.alive.play(); }
     sounds.bg.pause();
-    if (!isMobileDevice) currentTrack.volume = 0.3;
-    if (currentTrack.paused) { currentTrack.currentTime = 0; currentTrack.play(); }
+    if (!isMobileDevice) {
+        if (currentTrack.paused) currentTrack.currentTime = 0;
+        playCurrentMainTrack({ resetTime: false });
+    }
     isGameOver = false;
     gameOverTimer = 0;
     canRestart = false;
@@ -3927,7 +3944,8 @@ function start() {
     gameOverCoinBankDone = true;
     setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
     isLeaderboardPulseSynced = false;
-    sounds.bg.pause(); if (!isMobileDevice) currentTrack.volume = 0.3; currentTrack.currentTime = 0; currentTrack.play(); 
+    sounds.bg.pause();
+    if (!isMobileDevice) playCurrentMainTrack({ resetTime: true });
     if (fromGameOverRestart) {
         menuOverlay.style.transition = 'none';
         menuOverlay.style.opacity = '0';
