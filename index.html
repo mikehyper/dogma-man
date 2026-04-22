@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>DOGMA MAN</title>
+    <meta name="description" content="На планету напали космические монстры.">
     
     <meta property="og:title" content="DOGMA MAN">
-    <meta property="og:description" content="Уничтожай пришельцев!">
+    <meta property="og:description" content="На планету напали космические монстры.">
     <meta property="og:image" content="img/dogma_prew.png">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="DOGMA MAN">
-    <meta name="twitter:description" content="Уничтожай пришельцев!">
+    <meta name="twitter:description" content="На планету напали космические монстры.">
     <meta name="twitter:image" content="img/dogma_prew.png">
 
     <link rel="icon" href="img/favicon.png" type="image/png">
@@ -1010,10 +1011,10 @@
         }
         
         .menu-score-text { 
-            z-index: 300; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; color: #000; line-height: 1; white-space: nowrap; 
+            z-index: 300; min-height: 100px; height: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; color: #000; line-height: 1; white-space: normal; text-align: center; max-width: min(96vw, 900px);
         }
         
-        #menu-status-wrapper { font-size: 60px; margin-top: -7px; display: flex; align-items: center; gap: 15px; color: #000; }
+        #menu-status-wrapper { font-size: 60px; margin-top: -7px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 15px; color: #000; text-align: center; line-height: 1.05; max-width: 100%; }
         /* ПК: на экране смерти поднимаем "УНИЧТОЖЕНО: N" выше */
         @media (min-width: 769px) {
             /* "УНИЧТОЖЕНО" чуть ниже (на пару px) */
@@ -1418,6 +1419,7 @@
             .mobile-screen .js-stat-row { font-size: 15px; gap: 10px; padding: 8px 0; }
             #mobile-score-screen .score-table { font-size: 16px; }
             #top-info-text { font-size: 22px; }
+            #menu-status-wrapper { font-size: 36px; }
             #menu-over-coins.coin-hud-row {
                 align-items: center;
                 /* Вровень с «ДИСТАНЦИЯ:» (иконка/цифра визуально сидели слишком низко) */
@@ -1687,7 +1689,7 @@
             <img id="obj-star" class="decor-obj" src="img/star_main.png">
             <img id="obj-dgm" class="decor-obj" src="img/dgm_main.png">
             <div id="top-info-row">
-                <div id="top-info-text">НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ</div>
+                <div id="top-info-text">НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ</div>
                 <div id="menu-over-coins" class="coin-hud-row" hidden aria-hidden="true">
                     <span class="coin-hud-icon" aria-hidden="true"><span class="coin-hud-dollar">$</span></span>
                     <span id="menu-over-coin-count" class="coin-count-value">0</span>
@@ -3917,7 +3919,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ ИНОПЛАНЕТНЫЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
