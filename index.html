@@ -1425,9 +1425,7 @@
                 letter-spacing: -0.025em;
                 font-size: min(56px, max(30px, calc((100vw - 32px) * 0.132)));
             }
-            .killed-container {
-                font-size: min(52px, max(34px, calc((100vw - 96px) * 0.19)));
-            }
+            .killed-container { font-size: 32px; }
             /* Подсказка тача: одна строка, шрифт подгоняется под ширину. */
             #controls-text.menu-controls-text {
                 left: 50%;
@@ -2611,7 +2609,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     const ctrlText = document.getElementById('controls-text');
-    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫГАЙ · СПРАВА: СТРЕЛЯЙ И БУСТ";
+    if (isMobileDevice) ctrlText.innerText = "СЛЕВА: ПРЫГАЙ | СПРАВА: СТРЕЛЯЙ И БУСТ";
 
     (function revealInitialControlsWhenSplashReady() {
         if (!ctrlText) return;
