@@ -3321,8 +3321,12 @@ function resize() {
     const worldW = Math.round(vw * worldScale);
     const worldH = Math.round(vh * worldScale);
 
-    canvas.width = starsCanvas.width = worldW;
-    canvas.height = starsCanvas.height = worldH;
+    canvas.width = worldW;
+    canvas.height = worldH;
+
+    // Keep stars canvas at full resolution (original behavior).
+    starsCanvas.width = worldW;
+    starsCanvas.height = worldH;
 
     const cssW = Math.round(vw) + 'px';
     const cssH = Math.round(vh) + 'px';
@@ -3380,14 +3384,24 @@ function scheduleStars(fn, delayMs) {
     else starsSlowTid = setTimeout(fn, delayMs);
 }
 
-function updateStars() { 
+let lastMenuStarsTs = 0;
+
+function updateStars(ts) { 
     const visible = menuOverlay.style.display !== 'none' && !document.hidden;
     if (visible) { 
+        const now = (typeof ts === 'number') ? ts : performance.now();
+        // Full rAF smoothness; clamp dt to avoid huge jumps after tab-switches.
+        const rawDt = lastMenuStarsTs ? (now - lastMenuStarsTs) : (1000 / 60);
+        const dt = Math.max(0, Math.min(50, rawDt)); // ms
+        lastMenuStarsTs = now;
+
         sCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height); 
         const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2;
+        const w = Math.max(1, starsCanvas.width);
+        const step = 6 * (dt / (1000 / 60));
         for (let s of stars) { 
-            s.z += 6;
-            if (s.z >= starsCanvas.width) {
+            s.z += step;
+            if (s.z >= w) {
                 s.z = 1;
                 s.x = Math.random() * starsCanvas.width - cx;
                 s.y = Math.random() * starsCanvas.height - cy;
@@ -3396,12 +3410,27 @@ function updateStars() {
             const px = cx + (s.x / s.z) * starsCanvas.width, py = cy + (s.y / s.z) * starsCanvas.height, progress = (1 - s.z / starsCanvas.width), size = Math.max(0.1, progress * 14); 
             if (px > 0 && px < starsCanvas.width && py > 0 && py < starsCanvas.height) {
                 sCtx.fillStyle = s.isPurple ? "rgba(196, 156, 255, 0.9)" : "rgba(255, 245, 180, 0.9)";
-                sCtx.beginPath(); sCtx.moveTo(px, py - size * 1.8); sCtx.lineTo(px + size * 0.6, py - size * 0.6); sCtx.lineTo(px + size * 1.8, py); sCtx.lineTo(px + size * 0.6, py + size * 0.6); sCtx.lineTo(px, py + size * 1.8); sCtx.lineTo(px - size * 0.6, py + size * 0.6); sCtx.lineTo(px - size * 1.8, py); sCtx.lineTo(px - size * 0.6, py - size * 0.6); sCtx.closePath(); sCtx.fill(); 
+                sCtx.beginPath();
+                sCtx.moveTo(px, py - size * 1.8);
+                sCtx.lineTo(px + size * 0.6, py - size * 0.6);
+                sCtx.lineTo(px + size * 1.8, py);
+                sCtx.lineTo(px + size * 0.6, py + size * 0.6);
+                sCtx.lineTo(px, py + size * 1.8);
+                sCtx.lineTo(px - size * 0.6, py + size * 0.6);
+                sCtx.lineTo(px - size * 1.8, py);
+                sCtx.lineTo(px - size * 0.6, py - size * 0.6);
+                sCtx.closePath();
+                sCtx.fill();
             }
         } 
     }
     // When menu isn't visible (or tab is hidden) don't burn 60fps.
-    scheduleStars(updateStars, visible ? 0 : 200);
+    if (visible) {
+        starsRafId = requestAnimationFrame(updateStars);
+    } else {
+        stopStarsLoop();
+        starsSlowTid = setTimeout(updateStars, 200);
+    }
 } 
 updateStars();
 
