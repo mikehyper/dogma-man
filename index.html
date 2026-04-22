@@ -1418,6 +1418,16 @@
             .mobile-screen .js-stat-row { font-size: 15px; gap: 10px; padding: 8px 0; }
             #mobile-score-screen .score-table { font-size: 16px; }
             #top-info-text { font-size: 22px; }
+            /* Крупно, но одна строка: без wrap + плавный размер под ширину (длиннее «УНИЧТОЖЕНО:» + число). */
+            #menu-status-wrapper {
+                flex-wrap: nowrap;
+                white-space: nowrap;
+                letter-spacing: -0.03em;
+                font-size: min(48px, max(24px, calc((100vw - 40px) * 0.108)));
+            }
+            .killed-container {
+                font-size: min(46px, max(28px, calc((100vw - 140px) * 0.22)));
+            }
             #menu-over-coins.coin-hud-row {
                 align-items: center;
                 /* Вровень с «ДИСТАНЦИЯ:» (иконка/цифра визуально сидели слишком низко) */
