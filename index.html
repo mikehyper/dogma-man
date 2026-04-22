@@ -217,6 +217,7 @@
             display: block;
             flex-shrink: 0;
             align-self: center;
+            transform: translateY(var(--menu-coins-ty));
             filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.92));
         }
         #menu-total-coins-count {
@@ -861,6 +862,26 @@
             }
         }
 
+        @media (prefers-reduced-motion: reduce) {
+            #stars-canvas,
+            #rays-container {
+                display: none !important;
+            }
+            #menu-logo-pulse,
+            #menu-glow,
+            #menu-hero-violet-glow,
+            #obj-cig,
+            #obj-leaf,
+            #obj-star,
+            #obj-dgm,
+            #global-leaderboard-btn,
+            #dgm-top-logo-link {
+                animation: none !important;
+                transition: none !important;
+                filter: none !important;
+            }
+        }
+
         #top-info-row {
             transform: scale(0);
             animation: popInCenter 0.5s 0.9s forwards;
@@ -979,6 +1000,13 @@
         }
         
         #menu-status-wrapper { font-size: 60px; margin-top: -7px; display: flex; align-items: center; gap: 15px; color: #000; }
+        /* ПК: на экране смерти поднимаем "УНИЧТОЖЕНО: N" выше */
+        @media (min-width: 769px) {
+            /* "УНИЧТОЖЕНО" чуть ниже (на пару px) */
+            #menu-overlay.menu-overlay--gameover #menu-status-wrapper { margin-top: -26px; }
+            /* "ЖМИ ПРОБЕЛ..." чуть выше */
+            #menu-overlay.menu-overlay--gameover #controls-text { top: 72px; }
+        }
         .menu-controls-text { position: absolute; top: 75px; color: #c28b1a; font-size: 22px; opacity: 0; transition: opacity 0.2s ease; z-index: 1; text-align: center; margin: 0; }
         .show-text { opacity: 0.9; }
 
@@ -1272,6 +1300,7 @@
             object-fit: contain;
             /* В PNG монета часто визуально «тяжелее» снизу — чуть поднимаем к центру цифры */
             align-self: center;
+            transform: translateY(0.18em);
         }
         #death-revive-bank-count {
             display: flex;
@@ -1284,7 +1313,7 @@
             margin: 0;
             padding: 0;
             font-variant-numeric: tabular-nums;
-            transform: translateY(0.1em);
+            transform: none;
         }
         #hp-bar { width: 100%; height: 100%; background: #fff; transition: width 0.2s ease; }
         @keyframes hpHealGlow {
@@ -2723,7 +2752,26 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    let menuParallaxRafId = 0;
+    let menuParallaxSlowTid = 0;
+    const stopMenuParallaxLoop = () => {
+        if (menuParallaxRafId) cancelAnimationFrame(menuParallaxRafId);
+        menuParallaxRafId = 0;
+        if (menuParallaxSlowTid) clearTimeout(menuParallaxSlowTid);
+        menuParallaxSlowTid = 0;
+    };
+
+    const scheduleMenuParallax = (fn, delayMs) => {
+        stopMenuParallaxLoop();
+        if (delayMs <= 0) {
+            menuParallaxRafId = requestAnimationFrame(fn);
+        } else {
+            menuParallaxSlowTid = setTimeout(fn, delayMs);
+        }
+    };
+
     const animateMenuParallax = () => {
+        const visible = menuOverlayIsVisible() && !document.hidden;
         const now = performance.now();
         const isIdle = !hasPointerInput || (now - lastInputAt > IDLE_DELAY_MS);
 
@@ -2738,7 +2786,7 @@ window.addEventListener('DOMContentLoaded', () => {
         currentX += (targetX - currentX) * 0.085;
         currentY += (targetY - currentY) * 0.085;
 
-        if (menuOverlayIsVisible()) {
+        if (visible) {
             parallaxLayers.forEach(({ el, strength, driftX = 0, driftY = 0, speedX = 0, speedY = 0, phase = 0, rotAmp = 0, rotSpeed = 0, rotPhase = 0, clockwisePush = 0, pulseAmp = 0, pulseSpeed = 0, pulsePhase = 0 }) => {
                 const layerDriftX = driftX ? Math.sin(now * speedX + phase) * driftX : 0;
                 const layerDriftY = driftY ? Math.cos(now * speedY + phase) * driftY : 0;
@@ -2756,10 +2804,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     el.style.scale = pulseScale.toFixed(4);
                 }
             });
-
         }
 
-        requestAnimationFrame(animateMenuParallax);
+        // When menu isn't visible (or tab is hidden) don't burn 60fps.
+        scheduleMenuParallax(animateMenuParallax, visible ? 0 : 150);
     };
 
     window.addEventListener('touchmove', (e) => {
@@ -3304,8 +3352,23 @@ for (let i = 0; i < 120; i++) {
     });
 }
 
+let starsRafId = 0;
+let starsSlowTid = 0;
+function stopStarsLoop() {
+    if (starsRafId) cancelAnimationFrame(starsRafId);
+    starsRafId = 0;
+    if (starsSlowTid) clearTimeout(starsSlowTid);
+    starsSlowTid = 0;
+}
+function scheduleStars(fn, delayMs) {
+    stopStarsLoop();
+    if (delayMs <= 0) starsRafId = requestAnimationFrame(fn);
+    else starsSlowTid = setTimeout(fn, delayMs);
+}
+
 function updateStars() { 
-    if (menuOverlay.style.display !== 'none') { 
+    const visible = menuOverlay.style.display !== 'none' && !document.hidden;
+    if (visible) { 
         sCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height); 
         const cx = starsCanvas.width / 2, cy = starsCanvas.height / 2;
         for (let s of stars) { 
@@ -3322,7 +3385,9 @@ function updateStars() {
                 sCtx.beginPath(); sCtx.moveTo(px, py - size * 1.8); sCtx.lineTo(px + size * 0.6, py - size * 0.6); sCtx.lineTo(px + size * 1.8, py); sCtx.lineTo(px + size * 0.6, py + size * 0.6); sCtx.lineTo(px, py + size * 1.8); sCtx.lineTo(px - size * 0.6, py + size * 0.6); sCtx.lineTo(px - size * 1.8, py); sCtx.lineTo(px - size * 0.6, py - size * 0.6); sCtx.closePath(); sCtx.fill(); 
             }
         } 
-    } requestAnimationFrame(updateStars); 
+    }
+    // When menu isn't visible (or tab is hidden) don't burn 60fps.
+    scheduleStars(updateStars, visible ? 0 : 200);
 } 
 updateStars();
 
@@ -3488,11 +3553,17 @@ function spawnEnemyShards(enemy, groundY) {
 function spawnObstacle() {
     let currentX = distance * 15; 
     if (currentX - lastSpawnDist > nextSpawnGoal) {
-        lastSpawnDist = currentX; nextSpawnGoal = (superShotTimer > 0) ? (300 + Math.random() * 350) : (600 + Math.random() * 650); 
+        const isSplash = isFirstRun && !isGameOver;
+        lastSpawnDist = currentX;
+        if (superShotTimer > 0) nextSpawnGoal = 300 + Math.random() * 350;
+        else if (isSplash) nextSpawnGoal = 420 + Math.random() * 260; // на заставке — чуть чаще враги
+        else nextSpawnGoal = 600 + Math.random() * 650;
+
         const r = Math.random(); let type, gy = getGroundY();
         const spawnIce = tryGetIceSpawnConfig();
-        if (spawnIce) type = 'ice';
+        if (spawnIce && !isSplash) type = 'ice';
         else if (superShotTimer > 0) type = (Math.random() < 0.7) ? 'flyer' : 'zombie'; 
+        else if (isSplash) type = (Math.random() < 0.58) ? 'zombie' : 'flyer';
         else {
             const coinPity = distance - lastCoinSpawnDistance > COIN_PITY_DISTANCE_M;
             if (coinPity) type = 'coin';
@@ -3772,6 +3843,7 @@ function triggerGameOver() {
     updateCoinHudDisplay();
     menuStatusWrapper.style.fontSize = isMobileDevice ? "" : "75px"; 
     menuStatusWrapper.innerText = "УНИЧТОЖЕНО: " + enemiesDefeated; 
+    if (menuOverlay) menuOverlay.classList.add('menu-overlay--gameover');
     adjustMenuScale();
     restartLeaderboardPulse();
     saveCurrentUserStats();
@@ -3780,6 +3852,7 @@ function triggerGameOver() {
 
 function start() { 
     if (isModalOpen) return;
+    if (menuOverlay) menuOverlay.classList.remove('menu-overlay--gameover');
     reviveOfferActive = false;
     hideDeathReviveUI();
     if (gameOverMusicFadeInterval) { clearInterval(gameOverMusicFadeInterval); gameOverMusicFadeInterval = null; }
