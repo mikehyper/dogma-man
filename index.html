@@ -934,6 +934,19 @@
         #menu-over-coins .coin-hud-dollar {
             transform: none;
         }
+        /* Экран после смерти (моб): выравниваем число и иконку по одной линии */
+        @media (max-width: 768px) {
+            #menu-over-coins.coin-hud-row {
+                align-items: center;
+            }
+            #menu-over-coins .coin-hud-icon {
+                transform: none;
+            }
+            #menu-over-coins #menu-over-coin-count,
+            #menu-over-coins .coin-count-value {
+                transform: translateY(1px);
+            }
+        }
         #final-score-display { transform: scale(0); animation: popInFinalScore 0.5s 1.0s forwards; margin-top: 10px; }
 
         @keyframes pulseGlow {
