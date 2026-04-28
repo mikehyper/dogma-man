@@ -2932,6 +2932,7 @@ function syncMobileTouchNav() {
     const hide = isFirstRun || isGameOver;
     mobileTouchNavEl.classList.toggle('mobile-touch-nav--hidden', hide);
     mobileTouchNavEl.setAttribute('aria-hidden', hide ? 'true' : 'false');
+    if (!hide && isMobileDevice) syncMobileTouchRects();
 }
 
 function wireMobileTouchNavPressGlow() {
@@ -3240,7 +3241,27 @@ function isBoostActive() {
 const MOBILE_RIGHT_ACTION_BOTTOM_MAX = 154;
 const MOBILE_RIGHT_FIRE_MAX_FROM_BOTTOM = 56;
 
+function pointInRect(x, y, r) {
+    if (!r) return false;
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+
+let mobileBoostRect = null, mobileFireRect = null;
+function syncMobileTouchRects() {
+    if (!mobileTouchNavEl) { mobileBoostRect = null; mobileFireRect = null; return; }
+    const boostEl = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--boost');
+    const fireEl = mobileTouchNavEl.querySelector('.mobile-touch-nav-zone--fire');
+    const b = boostEl ? boostEl.getBoundingClientRect() : null;
+    const f = fireEl ? fireEl.getBoundingClientRect() : null;
+    // небольшой «запас» для удобства попадания, но не настолько большой чтобы пересекаться
+    const pad = 6;
+    mobileBoostRect = b ? ({ left: b.left - pad, top: b.top - pad, right: b.right + pad, bottom: b.bottom + pad }) : null;
+    mobileFireRect = f ? ({ left: f.left - pad, top: f.top - pad, right: f.right + pad, bottom: f.bottom + pad }) : null;
+}
+window.addEventListener('resize', () => syncMobileTouchRects());
+
 function touchInMobileBoostZone(clientX, clientY) {
+    if (isMobileDevice && mobileBoostRect) return pointInRect(clientX, clientY, mobileBoostRect);
     const w = window.innerWidth, h = window.innerHeight;
     const fromBottom = h - clientY;
     return clientX >= w / 2
@@ -3249,6 +3270,7 @@ function touchInMobileBoostZone(clientX, clientY) {
 }
 
 function touchInMobileFireZone(clientX, clientY) {
+    if (isMobileDevice && mobileFireRect) return pointInRect(clientX, clientY, mobileFireRect);
     const w = window.innerWidth, h = window.innerHeight;
     if (clientX < w / 2) return false;
     if (touchInMobileBoostZone(clientX, clientY)) return false;
@@ -3259,6 +3281,7 @@ function touchInMobileFireZone(clientX, clientY) {
 
 function syncMobileCenterBoostFromTouches(e) {
     if (!isMobileDevice) return { prev: mobileCenterBoostHeld, now: mobileCenterBoostHeld };
+    if (!mobileBoostRect || !mobileFireRect) syncMobileTouchRects();
     let any = false;
     for (let i = 0; i < e.touches.length; i++) {
         const t = e.touches[i];
@@ -3991,19 +4014,25 @@ window.addEventListener('touchstart', (e) => {
     const target = e.target;
     if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('#global-leaderboard-btn')) return;
     e.preventDefault();
-    const touchX = e.touches[0].clientX, touchY = e.touches[0].clientY, w = window.innerWidth;
+    const w = window.innerWidth;
     if (isFirstRun || (isGameOver && canRestart && !reviveOfferActive)) { start(); return; }
     if (isGameOver) return;
     if (isMobileDevice) {
+        if (!mobileBoostRect || !mobileFireRect) syncMobileTouchRects();
         const { prev, now } = syncMobileCenterBoostFromTouches(e);
         if (now && !prev && boostFuel > 0 && !isFirstRun && !isGameOver) { sounds.boost2.volume = 0.7; sounds.boost2.currentTime = 0; sounds.boost2.play(); }
-        if (touchX < w / 2) hero.jump();
-        else if (touchInMobileFireZone(touchX, touchY)) {
-            isFiring = true;
-            if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); }
+        // Важно: реагируем на каждый новый палец (changedTouches), а не только touches[0]
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const t = e.changedTouches[i];
+            if (t.clientX < w / 2) hero.jump();
+            else if (touchInMobileFireZone(t.clientX, t.clientY)) {
+                isFiring = true;
+                if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); }
+            }
         }
     } else {
         const mid = w / 2;
+        const touchX = e.touches[0].clientX;
         if (touchX < mid) hero.jump(); else { isFiring = true; if ((ammo > 0) && superShotTimer <= 0 && Date.now() - lastShotTime > 110) { fireBullet(); lastShotTime = Date.now(); } }
     }
 }, { passive: false });
