@@ -748,7 +748,8 @@
             margin: 0;
             transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(0);
             pointer-events: none;
-            opacity: 0.42;
+            opacity: 0.50;
+            filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.26)) drop-shadow(0 0 86px rgba(178, 92, 255, 0.22));
         }
         #menu-logo-pulse {
             --glowAmp: 1;
@@ -952,8 +953,8 @@
         #final-score-display { transform: scale(0); animation: popInFinalScore 0.5s 1.0s forwards; margin-top: 10px; }
 
         @keyframes pulseGlow {
-            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: calc(0.28 * var(--glowAmp, 1)); }
-            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: calc(0.42 * var(--glowAmp, 1)); }
+            0%, 100% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1); opacity: calc(0.44 * var(--glowAmp, 1)); }
+            50% { transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1.1); opacity: calc(0.68 * var(--glowAmp, 1)); }
         }
         @keyframes pulseHeroVioletGlow {
             0%, 100% { transform: translate(-50%, -46%) scale(0.98); opacity: 0.56; filter: blur(9px); }
@@ -987,11 +988,11 @@
         @keyframes pulseMenuGlowImageMobile {
             0%, 100% {
                 transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
-                opacity: var(--glowA, 0.3);
+                opacity: var(--glowA, 0.48);
             }
             50% {
                 transform: translate(calc(-50% - 6px), calc(-50% + 18px)) scale(1);
-                opacity: var(--glowB, 0.4);
+                opacity: var(--glowB, 0.70);
             }
         }
         @keyframes pulseMenuLogoPulseMobile {
@@ -2735,8 +2736,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 const phase = Math.random() * dur;
                 const amp = 0.75 + Math.random() * 0.75;
                 menuGlow.style.setProperty('--glowAmp', amp.toFixed(2));
-                menuGlow.style.setProperty('--glowA', (0.30 * amp).toFixed(4));
-                menuGlow.style.setProperty('--glowB', (0.40 * amp).toFixed(4));
+                menuGlow.style.setProperty('--glowA', (0.48 * amp).toFixed(4));
+                menuGlow.style.setProperty('--glowB', (0.70 * amp).toFixed(4));
                 /* popInGlow крутит только transform; пульс — opacity, конфликта нет — старт с первого кадра */
                 menuGlow.style.setProperty('animation', `popInGlow 0.6s 0.2s forwards, pulseMenuGlowImageMobile ${dur.toFixed(2)}s ease-in-out -${phase.toFixed(2)}s infinite`);
             }
