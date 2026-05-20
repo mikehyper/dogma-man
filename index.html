@@ -547,6 +547,15 @@
         }
         .score-table th { text-align: left; padding: 12px; border: 2px solid #000; line-height: 1; }
         .score-table td { padding: 12px; border: 2px solid #000; line-height: 1; vertical-align: middle; }
+        .score-table .score-tg-link {
+            display: inline;
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .score-table .score-tg-link:hover {
+            color: rgba(0, 0, 0, 0.5);
+        }
         .score-table th:nth-child(3),
         .score-table td:nth-child(3) {
             font-size: 1.2em;
@@ -1949,6 +1958,24 @@ function isValidTelegramUsername(value) {
     return /^[A-Za-z0-9](?:[A-Za-z0-9_]{3,30}[A-Za-z0-9])$/.test(value);
 }
 
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function scoreboardNameCellHtml(name) {
+    const cleanName = normalizeTelegramUsername(name || 'igrok');
+    const label = '@' + cleanName;
+    if (!cleanName || cleanName.toLowerCase() === 'гость' || !isValidTelegramUsername(cleanName)) {
+        return escapeHtml(label);
+    }
+    const href = 'https://t.me/' + encodeURIComponent(cleanName);
+    return `<a class="score-tg-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+}
+
 function stopNicknameMarquee() {
     if (nickMarqueeInterval) clearInterval(nickMarqueeInterval);
     if (nickMarqueeStartTimeout) clearTimeout(nickMarqueeStartTimeout);
@@ -2453,8 +2480,7 @@ function renderScoreTable(data) {
 
     data.forEach((d) => {
         const originalIndex = globalScores.findIndex(item => item.name === d.name && item.kills === d.kills) + 1;
-        const cleanName = normalizeTelegramUsername(d.name || 'igrok');
-        const rowHtml = `<td>${originalIndex}</td><td>@${cleanName}</td><td>${d.kills}</td><td>${d.dist}</td>`;
+        const rowHtml = `<td>${originalIndex}</td><td>${scoreboardNameCellHtml(d.name)}</td><td>${d.kills}</td><td>${d.dist}</td>`;
 
         if (body) {
             const row = document.createElement('tr');
