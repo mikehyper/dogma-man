@@ -2982,7 +2982,7 @@ const deathReviveCountdownEl = document.getElementById('death-revive-countdown')
 const deathReviveBtnEl = document.getElementById('death-revive-btn');
 const deathReviveBankCountEl = document.getElementById('death-revive-bank-count');
 
-let enemiesDefeated = 0, ammo = 20, hp = 100, lastHpForBar = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastCoinSpawnDistance = 0, coinsCollected = 0, shotsThisRun = 0, icePickupsThisRun = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let enemiesDefeated = 0, ammo = 20, hp = 100, lastHpForBar = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, frameAcc = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastCoinSpawnDistance = 0, coinsCollected = 0, shotsThisRun = 0, icePickupsThisRun = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
 let reviveOfferActive = false, reviveOfferDeadline = 0, reviveClockNextPlay = 0, reviveSplashBgStarted = false, gameOverMusicFadeInterval = null;
 const REVIVE_COST = 100;
 const REVIVE_DURATION_MS = 3000;
@@ -3752,7 +3752,9 @@ function spawnObstacle() {
 }
 
 function render(currentTime) {
-    if (!lastTime) lastTime = currentTime; let ts = Math.min((currentTime - lastTime) / 16.6, 2); lastTime = currentTime; frame++; 
+    if (!lastTime) lastTime = currentTime; let ts = Math.min((currentTime - lastTime) / 16.6, 2); lastTime = currentTime;
+    frameAcc += ts;
+    while (frameAcc >= 1) { frame++; frameAcc -= 1; } 
     const worldTs = isGameOver ? 0 : ts;
     if (!isGameOver) { 
         if (isBraking) { baseSpeed += (targetBaseSpeed - baseSpeed) * 0.05 * ts; if (Math.abs(baseSpeed - targetBaseSpeed) < 0.1) { baseSpeed = targetBaseSpeed; isBraking = false; } } else baseSpeed = Math.min(baseSpeed + 0.0012 * ts, 55); 
@@ -3770,7 +3772,7 @@ function render(currentTime) {
         distance += (gameSpeed * ts) / 10; distValEl.innerHTML = distance < 1000 ? Math.floor(distance) + "м" : (distance/1000).toFixed(3) + "<span class='km-unit'>км</span>"; 
         let tCY = 0; if (hero.y < canvas.height * 0.4) tCY = (canvas.height * 0.4) - hero.y; cameraScrollY += (tCY - cameraScrollY) * 0.1 * ts; spawnObstacle();
     } else cameraScrollY *= (1 - 0.05 * ts);
-    const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0); if (shakeTime > 0) shakeTime--;
+    const gy = getGroundY(); let fcy = cameraScrollY + (shakeTime > 0 ? (Math.random()-0.5)*20 : 0); if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - ts);
     let skyL = Math.min(1, Math.max(0, cameraScrollY / 2000));
     const skyR0 = 255 - skyL * 200, skyG0 = 194 - skyL * 180, skyB0 = 64 - skyL * 60;
     ctx.fillStyle = `rgb(${Math.round(skyR0)}, ${Math.round(skyG0)}, ${Math.round(skyB0)})`;
@@ -3913,7 +3915,7 @@ function render(currentTime) {
                 reviveSplashBgStarted = false;
             }
         } else {
-        gameOverTimer--;
+        gameOverTimer -= ts;
         if (gameOverTimer < 90) {
             menuOverlay.style.display = 'flex';
             menuOverlay.style.opacity = Math.min(1, (90 - gameOverTimer) / 60);
@@ -4008,7 +4010,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
-    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
+    isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; frameAcc = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
 }
