@@ -3580,7 +3580,7 @@ const hero = {
         }
         if (!boosting && boostTimer <= 0) { sounds.woosh.pause(); sounds.woosh.currentTime = 0; }
         if (boostExitSafety > 0) boostExitSafety -= ts;
-        if (superShotTimer > 0) { superShotTimer -= ts; if (frame % 5 === 0) fireBullet(true); }
+        if (superShotTimer > 0) { superShotTimer -= ts; const now = Date.now(); if (now - lastShotTime > 110) { fireBullet(true); lastShotTime = now; } }
         if (shieldTimer > 0) { if (sounds.power.paused) sounds.power.play(); shieldTimer -= ts; if (shieldTimer <= 0) { sounds.power.pause(); sounds.power.currentTime = 0; } }
         if (isFiring && !isGameOver && !isFirstRun && (ammo > 0) && superShotTimer <= 0) { let now = Date.now(); if (now - lastShotTime > 110) { fireBullet(); lastShotTime = now; } }
         const gy = getGroundY(); let onSolid = false, targetAngle = 0;
