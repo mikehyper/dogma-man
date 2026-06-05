@@ -2049,6 +2049,7 @@ function applyAuthState(name, uid = null, opts) {
     if (!opts || !opts.skipCoinReload) {
         loadTotalCoinsForCurrentAuth();
         syncBankCoinsFromCloud();
+        repairCloudBestScores();
         try {
             if (typeof reviveOfferActive !== 'undefined' && reviveOfferActive && typeof showDeathReviveUI === 'function') {
                 showDeathReviveUI();
@@ -2298,6 +2299,57 @@ async function performAuth(type, name, pass) {
     }
 }
 
+function computeBestRunScores(prev, runKills, runKm, local) {
+    return {
+        kills: Math.max(Number(prev && prev.kills) || 0, runKills, Number(local && local.bestKills) || 0),
+        distKm: Math.max(Number(prev && prev.distKm) || 0, runKm, Number(local && local.bestDistKm) || 0)
+    };
+}
+
+function buildCloudStatsPayload(nextKills, nextDist, runKills, runKm, runCoins, runShots, runIce) {
+    return {
+        nickname: currentUser,
+        nicknameUpper: (currentUser || 'ГОСТЬ').toUpperCase(),
+        nicknameLower: (currentUser || 'ГОСТЬ').toLowerCase(),
+        kills: nextKills,
+        distKm: nextDist,
+        gamesPlayed: firebase.firestore.FieldValue.increment(1),
+        totalKills: firebase.firestore.FieldValue.increment(runKills),
+        totalDistKm: firebase.firestore.FieldValue.increment(runKm),
+        lifetimeCoinsCollected: firebase.firestore.FieldValue.increment(runCoins),
+        totalShots: firebase.firestore.FieldValue.increment(runShots),
+        totalIcePickups: firebase.firestore.FieldValue.increment(runIce),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+}
+
+async function repairCloudBestScores() {
+    if (!firebaseEnabled || !currentUserUid || !fbDb || !getLifetimeStatsStorageKey()) return;
+    const local = loadLocalLifetimeStats();
+    try {
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const snap = await docRef.get();
+        if (!snap.exists) return;
+        const d = snap.data();
+        const cloudKills = Number(d.kills) || 0;
+        const cloudDist = Number(d.distKm) || 0;
+        const bestKills = Math.max(local.bestKills || 0, cloudKills);
+        const bestDist = Math.max(local.bestDistKm || 0, cloudDist);
+        if (bestKills > (local.bestKills || 0) || bestDist > (local.bestDistKm || 0)) {
+            local.bestKills = bestKills;
+            local.bestDistKm = bestDist;
+            saveLocalLifetimeStats(local);
+        }
+        if (bestKills > cloudKills || bestDist > cloudDist) {
+            await docRef.set({
+                kills: bestKills,
+                distKm: bestDist,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+    } catch (err) {}
+}
+
 async function saveCurrentUserStats() {
     const runKm = Number((distance / 1000).toFixed(6));
     const runKills = enemiesDefeated | 0;
@@ -2306,29 +2358,34 @@ async function saveCurrentUserStats() {
     const runIce = icePickupsThisRun | 0;
 
     mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
+    const local = loadLocalLifetimeStats();
 
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    const docRef = fbDb.collection('players').doc(currentUserUid);
+    const writeCloudStats = async (prev) => {
+        const best = computeBestRunScores(prev, runKills, runKm, local);
+        await docRef.set(buildCloudStatsPayload(best.kills, best.distKm, runKills, runKm, runCoins, runShots, runIce), { merge: true });
+    };
     try {
-        const docRef = fbDb.collection('players').doc(currentUserUid);
-        const snap = await docRef.get();
-        const prev = snap.exists ? snap.data() : {};
-        const nextKills = Math.max(prev.kills || 0, runKills);
-        const nextDist = Math.max(prev.distKm || 0, runKm);
-        await docRef.set({
-            nickname: currentUser,
-            nicknameUpper: (currentUser || 'ГОСТЬ').toUpperCase(),
-            nicknameLower: (currentUser || 'ГОСТЬ').toLowerCase(),
-            kills: nextKills,
-            distKm: nextDist,
-            gamesPlayed: firebase.firestore.FieldValue.increment(1),
-            totalKills: firebase.firestore.FieldValue.increment(runKills),
-            totalDistKm: firebase.firestore.FieldValue.increment(runKm),
-            lifetimeCoinsCollected: firebase.firestore.FieldValue.increment(runCoins),
-            totalShots: firebase.firestore.FieldValue.increment(runShots),
-            totalIcePickups: firebase.firestore.FieldValue.increment(runIce),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-    } catch (err) {}
+        await fbDb.runTransaction(async (transaction) => {
+            const snap = await transaction.get(docRef);
+            const prev = snap.exists ? snap.data() : {};
+            const best = computeBestRunScores(prev, runKills, runKm, local);
+            transaction.set(docRef, buildCloudStatsPayload(best.kills, best.distKm, runKills, runKm, runCoins, runShots, runIce), { merge: true });
+        });
+    } catch (err) {
+        try {
+            let prev = {};
+            try {
+                const snap = await docRef.get({ source: 'server' });
+                prev = snap.exists ? snap.data() : {};
+            } catch (serverErr) {
+                const snap = await docRef.get();
+                prev = snap.exists ? snap.data() : {};
+            }
+            await writeCloudStats(prev);
+        } catch (fallbackErr) {}
+    }
 }
 
 async function loadCloudScores() {
