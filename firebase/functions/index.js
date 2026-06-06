@@ -1,4 +1,4 @@
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -17,7 +17,7 @@ const LIMITS = {
   maxGamesPerHour: 40,
   maxKillsPerMinute: 120,
   maxKmPerMinute: 15,
-  maxBankCoins: 10_000_000,
+  maxBankCoins: 10000000,
 };
 
 const TELEGRAM_USERNAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9_]{3,30}[A-Za-z0-9])$/;
@@ -184,7 +184,7 @@ exports.submitGameRun = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
   const playerRef = db.collection('players').doc(uid);
-  const hourAgo = admin.firestore.Timestamp.fromMillis(Date.now() - 3600_000);
+  const hourAgo = admin.firestore.Timestamp.fromMillis(Date.now() - 3600000);
 
   const result = await db.runTransaction(async (tx) => {
     const snap = await tx.get(playerRef);
