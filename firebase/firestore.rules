@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{userId} {
+      // Лидерборд и личная статистика — только чтение с клиента.
+      allow read: if true;
+
+      // Все записи — только через Cloud Functions (Admin SDK).
+      allow create, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

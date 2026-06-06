@@ -1903,6 +1903,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 <script>
 // --- AUTH LOGIC ---
 let currentUser = null;
@@ -1913,6 +1914,8 @@ let globalScores = [];
 let firebaseEnabled = false;
 let fbAuth = null;
 let fbDb = null;
+let fbFunctions = null;
+let runStartedAtMs = 0;
 let mobileAuthMode = 'reg';
 let nickMarqueeInterval = null;
 let nickMarqueeStartTimeout = null;
@@ -2022,6 +2025,7 @@ function initFirebase() {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         fbAuth = firebase.auth();
         fbDb = firebase.firestore();
+        fbFunctions = firebase.functions();
         firebaseEnabled = true;
     } catch (err) {
         firebaseEnabled = false;
@@ -2212,14 +2216,21 @@ async function openPlayerStats() {
     }
 }
 
-async function incrementLifetimeRevivesCloud() {
+async function incrementLifetimeRevivesCloud(bankSpend) {
     mergeLocalReviveCount();
-    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return;
     try {
-        await fbDb.collection('players').doc(currentUserUid).set({
-            totalRevives: firebase.firestore.FieldValue.increment(1),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        const res = await fbFunctions.httpsCallable('performRevive')({ bankSpend: bankSpend | 0 });
+        const cloudBank = res && res.data && res.data.bankCoins;
+        if (cloudBank != null && Number.isFinite(Number(cloudBank))) {
+            const key = getCoinsStorageKey();
+            totalCoinsAllTime = Math.max(0, Number(cloudBank) | 0);
+            if (key) {
+                try { localStorage.setItem(key, String(totalCoinsAllTime)); } catch (e) {}
+            }
+            setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+            updateCoinHudDisplay();
+        }
     } catch (err) {}
 }
 
@@ -2239,14 +2250,9 @@ async function performAuth(type, name, pass) {
         let cred;
         if (type === 'reg') {
             cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-            await fbDb.collection('players').doc(cred.user.uid).set({
-                nickname: name,
-                nicknameUpper: name.toUpperCase(),
-                nicknameLower: name.toLowerCase(),
-                kills: 0,
-                distKm: 0,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
+            if (fbFunctions) {
+                await fbFunctions.httpsCallable('registerPlayer')({ nickname: name });
+            }
             applyAuthState(name, cred.user.uid);
         } else {
             let lastErr = null;
@@ -2299,36 +2305,11 @@ async function performAuth(type, name, pass) {
     }
 }
 
-function computeBestRunScores(prev, runKills, runKm, local) {
-    return {
-        kills: Math.max(Number(prev && prev.kills) || 0, runKills, Number(local && local.bestKills) || 0),
-        distKm: Math.max(Number(prev && prev.distKm) || 0, runKm, Number(local && local.bestDistKm) || 0)
-    };
-}
-
-function buildCloudStatsPayload(nextKills, nextDist, runKills, runKm, runCoins, runShots, runIce) {
-    return {
-        nickname: currentUser,
-        nicknameUpper: (currentUser || 'ГОСТЬ').toUpperCase(),
-        nicknameLower: (currentUser || 'ГОСТЬ').toLowerCase(),
-        kills: nextKills,
-        distKm: nextDist,
-        gamesPlayed: firebase.firestore.FieldValue.increment(1),
-        totalKills: firebase.firestore.FieldValue.increment(runKills),
-        totalDistKm: firebase.firestore.FieldValue.increment(runKm),
-        lifetimeCoinsCollected: firebase.firestore.FieldValue.increment(runCoins),
-        totalShots: firebase.firestore.FieldValue.increment(runShots),
-        totalIcePickups: firebase.firestore.FieldValue.increment(runIce),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-}
-
 async function repairCloudBestScores() {
     if (!firebaseEnabled || !currentUserUid || !fbDb || !getLifetimeStatsStorageKey()) return;
     const local = loadLocalLifetimeStats();
     try {
-        const docRef = fbDb.collection('players').doc(currentUserUid);
-        const snap = await docRef.get();
+        const snap = await fbDb.collection('players').doc(currentUserUid).get();
         if (!snap.exists) return;
         const d = snap.data();
         const cloudKills = Number(d.kills) || 0;
@@ -2340,13 +2321,6 @@ async function repairCloudBestScores() {
             local.bestDistKm = bestDist;
             saveLocalLifetimeStats(local);
         }
-        if (bestKills > cloudKills || bestDist > cloudDist) {
-            await docRef.set({
-                kills: bestKills,
-                distKm: bestDist,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-        }
     } catch (err) {}
 }
 
@@ -2356,36 +2330,31 @@ async function saveCurrentUserStats() {
     const runCoins = coinsCollected | 0;
     const runShots = shotsThisRun | 0;
     const runIce = icePickupsThisRun | 0;
+    const durationMs = runStartedAtMs > 0
+        ? Math.max(0, Math.round(performance.now() - runStartedAtMs))
+        : 0;
 
     mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
-    const local = loadLocalLifetimeStats();
 
-    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
-    const docRef = fbDb.collection('players').doc(currentUserUid);
-    const writeCloudStats = async (prev) => {
-        const best = computeBestRunScores(prev, runKills, runKm, local);
-        await docRef.set(buildCloudStatsPayload(best.kills, best.distKm, runKills, runKm, runCoins, runShots, runIce), { merge: true });
-    };
+    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return;
     try {
-        await fbDb.runTransaction(async (transaction) => {
-            const snap = await transaction.get(docRef);
-            const prev = snap.exists ? snap.data() : {};
-            const best = computeBestRunScores(prev, runKills, runKm, local);
-            transaction.set(docRef, buildCloudStatsPayload(best.kills, best.distKm, runKills, runKm, runCoins, runShots, runIce), { merge: true });
+        await fbFunctions.httpsCallable('submitGameRun')({
+            kills: runKills,
+            shots: runShots,
+            distKm: runKm,
+            coins: runCoins,
+            icePickups: runIce,
+            durationMs
         });
-    } catch (err) {
-        try {
-            let prev = {};
-            try {
-                const snap = await docRef.get({ source: 'server' });
-                prev = snap.exists ? snap.data() : {};
-            } catch (serverErr) {
-                const snap = await docRef.get();
-                prev = snap.exists ? snap.data() : {};
-            }
-            await writeCloudStats(prev);
-        } catch (fallbackErr) {}
-    }
+    } catch (err) {}
+}
+
+async function creditBankCoinsToCloud(delta) {
+    const n = delta | 0;
+    if (!firebaseEnabled || !currentUserUid || !fbFunctions || n <= 0) return;
+    try {
+        await fbFunctions.httpsCallable('creditBankCoins')({ delta: n });
+    } catch (err) {}
 }
 
 async function loadCloudScores() {
@@ -3112,7 +3081,7 @@ function performReviveFromDeath() {
     persistTotalCoins();
     setMenuTotalCoinsCountDisplay(getSpendableCoinsIncludingRun());
     updateCoinHudDisplay();
-    incrementLifetimeRevivesCloud();
+    incrementLifetimeRevivesCloud(fromBank);
     if (!isMobileDevice) { sounds.alive.currentTime = 0; sounds.alive.play(); }
     sounds.bg.pause();
     if (!isMobileDevice) {
@@ -3151,13 +3120,6 @@ function persistTotalCoins() {
     const n = Math.max(0, totalCoinsAllTime | 0);
     try {
         localStorage.setItem(key, String(n));
-    } catch (err) {}
-    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
-    try {
-        fbDb.collection('players').doc(currentUserUid).set({
-            bankCoins: n,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(() => {});
     } catch (err) {}
 }
 
@@ -3219,30 +3181,51 @@ function loadTotalCoinsForCurrentAuth() {
     updateCoinHudDisplay();
 }
 
+async function migrateMyBankCoinsFromLocal() {
+    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return null;
+    try {
+        const res = await fbFunctions.httpsCallable('migrateMyBankCoins')({
+            localBank: Math.max(0, totalCoinsAllTime | 0)
+        });
+        return res && res.data ? res.data : null;
+    } catch (err) {
+        return null;
+    }
+}
+
 async function syncBankCoinsFromCloud() {
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
     const key = getCoinsStorageKey();
     if (!key) return;
     try {
-        const snap = await fbDb.collection('players').doc(currentUserUid).get();
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        let snap = await docRef.get();
         if (!snap.exists) return;
-        const raw = snap.data().bankCoins;
-        const hasCloud = raw != null && Number.isFinite(Number(raw));
+
+        let raw = snap.data().bankCoins;
+        let hasCloud = raw != null && Number.isFinite(Number(raw));
         if (!hasCloud) {
-            persistTotalCoins();
-            return;
+            const migration = await migrateMyBankCoinsFromLocal();
+            if (migration && migration.bankCoins != null && Number.isFinite(Number(migration.bankCoins))) {
+                raw = migration.bankCoins;
+                hasCloud = true;
+            } else {
+                snap = await docRef.get();
+                if (snap.exists) {
+                    raw = snap.data().bankCoins;
+                    hasCloud = raw != null && Number.isFinite(Number(raw));
+                }
+            }
         }
+        if (!hasCloud) return;
+
         const c = Math.max(0, Number(raw) | 0);
-        // Никогда не уменьшаем локальную копилку из-за устаревшего облачного значения.
-        const merged = Math.max(0, Math.max(totalCoinsAllTime | 0, c));
-        totalCoinsAllTime = merged;
+        totalCoinsAllTime = c;
         try {
-            localStorage.setItem(key, String(merged));
+            localStorage.setItem(key, String(c));
         } catch (e) {}
-        setMenuTotalCoinsCountDisplay(merged);
+        setMenuTotalCoinsCountDisplay(c);
         updateCoinHudDisplay();
-        // Если локально было больше — аккуратно подтолкнём облако вверх.
-        if (merged !== c) persistTotalCoins();
     } catch (err) {}
 }
 
@@ -3286,6 +3269,7 @@ function runCoinBankAnimFromTotal(roundCoins, onComplete) {
     if (Number.isFinite(parsed) && parsed >= to) {
         totalCoinsAllTime = to;
         persistTotalCoins();
+        creditBankCoinsToCloud(roundCoins);
         setMenuTotalCoinsCountDisplay(to);
         if (onComplete) onComplete();
         return;
@@ -3306,6 +3290,7 @@ function runCoinBankAnimFromTotal(roundCoins, onComplete) {
         else {
             totalCoinsAllTime = to;
             persistTotalCoins();
+            creditBankCoinsToCloud(roundCoins);
             if (menuTotalCoinsCountEl) menuTotalCoinsCountEl.classList.remove('menu-total-coins-count--bank-anim');
             if (onComplete) onComplete();
         }
@@ -4067,6 +4052,7 @@ function start() {
         menuOverlay.style.opacity = 0;
         setTimeout(() => { if (!isGameOver) menuOverlay.style.display = 'none'; }, 200);
     }
+    runStartedAtMs = performance.now();
     isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; frameAcc = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
     hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
     syncMobileTouchNav();
