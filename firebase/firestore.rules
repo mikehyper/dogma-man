@@ -3,11 +3,121 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /players/{userId} {
-      // Лидерборд и личная статистика — только чтение с клиента.
       allow read: if true;
 
-      // Все записи — только через Cloud Functions (Admin SDK).
-      allow create, update, delete: if false;
+      allow create: if isOwner()
+        && isValidNewProfile();
+
+      allow update: if isOwner()
+        && nickUnchanged()
+        && (
+          validGameRunUpdate()
+          || validBankCreditUpdate()
+          || validReviveUpdate()
+          || validBestRepairUpdate()
+        );
+
+      allow delete: if false;
+
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function nickUnchanged() {
+        return request.resource.data.nicknameLower == resource.data.nicknameLower
+          && request.resource.data.nickname == resource.data.nickname
+          && request.resource.data.nicknameUpper == resource.data.nicknameUpper;
+      }
+
+      function isValidNewProfile() {
+        let n = request.resource.data;
+        return n.nickname is string
+          && n.nickname.size() >= 5
+          && n.nickname.size() <= 32
+          && n.kills == 0
+          && n.distKm == 0
+          && n.gamesPlayed == 0
+          && n.totalKills == 0
+          && n.totalDistKm == 0
+          && n.totalShots == 0
+          && n.totalRevives == 0
+          && n.totalIcePickups == 0
+          && n.lifetimeCoinsCollected == 0
+          && n.bankCoins == 0;
+      }
+
+      function validRatio(kills, shots) {
+        return shots == 0 || kills / shots <= 2.5;
+      }
+
+      function coreStatsFrozen() {
+        let p = resource.data;
+        let n = request.resource.data;
+        return n.gamesPlayed == p.gamesPlayed
+          && n.kills == p.kills
+          && n.distKm == p.distKm
+          && n.totalKills == p.totalKills
+          && n.totalShots == p.totalShots
+          && n.totalDistKm == p.totalDistKm
+          && n.lifetimeCoinsCollected == p.lifetimeCoinsCollected
+          && n.totalIcePickups == p.totalIcePickups;
+      }
+
+      function validGameRunUpdate() {
+        let p = resource.data;
+        let n = request.resource.data;
+        return n.gamesPlayed == p.gamesPlayed + 1
+          && n.kills >= p.kills
+          && n.kills <= 3000
+          && n.kills <= p.kills + 3000
+          && n.distKm >= p.distKm
+          && n.distKm <= 500
+          && n.distKm <= p.distKm + 500
+          && n.totalKills >= p.totalKills
+          && n.totalKills <= p.totalKills + 3000
+          && n.totalShots >= p.totalShots
+          && n.totalShots <= p.totalShots + 20000
+          && n.totalDistKm >= p.totalDistKm
+          && n.totalDistKm <= p.totalDistKm + 500
+          && n.lifetimeCoinsCollected >= p.lifetimeCoinsCollected
+          && n.lifetimeCoinsCollected <= p.lifetimeCoinsCollected + 5000
+          && n.totalIcePickups >= p.totalIcePickups
+          && n.totalIcePickups <= p.totalIcePickups + 200
+          && n.totalRevives == p.totalRevives
+          && n.bankCoins == p.bankCoins
+          && validRatio(n.totalKills, n.totalShots);
+      }
+
+      function validBankCreditUpdate() {
+        let p = resource.data;
+        let n = request.resource.data;
+        return coreStatsFrozen()
+          && n.totalRevives == p.totalRevives
+          && n.bankCoins > p.bankCoins
+          && n.bankCoins <= p.bankCoins + 5000
+          && n.bankCoins <= 10000000;
+      }
+
+      function validReviveUpdate() {
+        let p = resource.data;
+        let n = request.resource.data;
+        return coreStatsFrozen()
+          && n.totalRevives == p.totalRevives + 1
+          && n.bankCoins <= p.bankCoins
+          && p.bankCoins - n.bankCoins <= 100;
+      }
+
+      function validBestRepairUpdate() {
+        let p = resource.data;
+        let n = request.resource.data;
+        return coreStatsFrozen()
+          && n.totalRevives == p.totalRevives
+          && n.bankCoins == p.bankCoins
+          && n.kills >= p.kills
+          && n.kills <= 3000
+          && n.distKm >= p.distKm
+          && n.distKm <= 500;
+      }
     }
 
     match /{document=**} {

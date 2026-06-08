@@ -1903,7 +1903,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
 <script>
 // --- AUTH LOGIC ---
 let currentUser = null;
@@ -1914,7 +1913,6 @@ let globalScores = [];
 let firebaseEnabled = false;
 let fbAuth = null;
 let fbDb = null;
-let fbFunctions = null;
 let runStartedAtMs = 0;
 let mobileAuthMode = 'reg';
 let nickMarqueeInterval = null;
@@ -1931,6 +1929,84 @@ const firebaseConfig = {
 
 function isFirebaseConfigured() {
     return Object.values(firebaseConfig).every((v) => typeof v === 'string' && !v.includes('YOUR_'));
+}
+
+/* Лимиты забега — дублируют firestore.rules; разнесены, чтобы не искать одним grep по репо. */
+const _RG = {
+    k: 3000, s: 20000, d: 500, c: 5000, i: 200,
+    r: 2.5, km: 15, kl: 120
+};
+const _SG = String.fromCharCode(68, 111, 103, 109, 97, 77, 97, 110, 52, 50);
+
+function _foldRun(run) {
+    const kills = run.kills | 0;
+    const shots = run.shots | 0;
+    const distKm = Number(run.distKm) || 0;
+    const coins = run.coins | 0;
+    const ice = run.icePickups | 0;
+    const dur = Math.max(0, run.durationMs | 0);
+    return { kills, shots, distKm, coins, ice, dur };
+}
+
+function auditRunPayload(run) {
+    const r = _foldRun(run);
+    if (r.kills < 0 || r.kills > _RG.k) return { ok: false, code: 'kills' };
+    if (r.shots < 0 || r.shots > _RG.s) return { ok: false, code: 'shots' };
+    if (r.kills > 0 && r.shots < 1) return { ok: false, code: 'ratio' };
+    if (r.shots > 0 && r.kills / r.shots > _RG.r) return { ok: false, code: 'ratio' };
+    if (r.distKm < 0 || r.distKm > _RG.d) return { ok: false, code: 'dist' };
+    if (r.coins < 0 || r.coins > _RG.c) return { ok: false, code: 'coins' };
+    if (r.ice < 0 || r.ice > _RG.i) return { ok: false, code: 'ice' };
+    const mins = Math.max(r.dur / 60000, 1 / 60);
+    if (r.kills / mins > _RG.kl) return { ok: false, code: 'kpm' };
+    if (r.distKm / mins > _RG.km) return { ok: false, code: 'dpm' };
+    return { ok: true, folded: r };
+}
+
+function sealPlayerStats(uid, data) {
+    const g = (k) => Math.max(0, Number(data[k]) || 0);
+    const raw = [
+        uid || '',
+        g('gamesPlayed'), g('totalKills'), g('totalShots'),
+        g('kills'), g('distKm').toFixed(3),
+        g('lifetimeCoinsCollected'), g('totalRevives'), _SG
+    ].join('|');
+    let h = 2166136261;
+    for (let i = 0; i < raw.length; i++) {
+        h ^= raw.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(36);
+}
+
+function playerDocBaseFields(nickname) {
+    const nick = normalizeTelegramUsername(nickname);
+    return {
+        nickname: nick,
+        nicknameUpper: nick.toUpperCase(),
+        nicknameLower: nick.toLowerCase(),
+        kills: 0,
+        distKm: 0,
+        gamesPlayed: 0,
+        totalKills: 0,
+        totalDistKm: 0,
+        totalShots: 0,
+        totalRevives: 0,
+        totalIcePickups: 0,
+        lifetimeCoinsCollected: 0,
+        bankCoins: 0,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+}
+
+async function ensurePlayerProfile(nickname, uid) {
+    if (!firebaseEnabled || !fbDb || !uid) return;
+    const docRef = fbDb.collection('players').doc(uid);
+    const snap = await docRef.get();
+    if (snap.exists) return;
+    const base = playerDocBaseFields(nickname);
+    base.statsSeal = sealPlayerStats(uid, base);
+    await docRef.set(base);
 }
 
 function nicknameToEmail(name) {
@@ -2025,7 +2101,6 @@ function initFirebase() {
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         fbAuth = firebase.auth();
         fbDb = firebase.firestore();
-        fbFunctions = firebase.functions();
         firebaseEnabled = true;
     } catch (err) {
         firebaseEnabled = false;
@@ -2218,18 +2293,37 @@ async function openPlayerStats() {
 
 async function incrementLifetimeRevivesCloud(bankSpend) {
     mergeLocalReviveCount();
-    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return;
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    const spend = Math.max(0, bankSpend | 0);
+    if (spend > 100) return;
     try {
-        const res = await fbFunctions.httpsCallable('performRevive')({ bankSpend: bankSpend | 0 });
-        const cloudBank = res && res.data && res.data.bankCoins;
-        if (cloudBank != null && Number.isFinite(Number(cloudBank))) {
-            const key = getCoinsStorageKey();
-            totalCoinsAllTime = Math.max(0, Number(cloudBank) | 0);
-            if (key) {
-                try { localStorage.setItem(key, String(totalCoinsAllTime)); } catch (e) {}
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        await fbDb.runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            if (!snap.exists) return;
+            const prev = snap.data();
+            const currentBank = Math.max(0, Number(prev.bankCoins) || 0);
+            if (spend > currentBank) throw new Error('bank');
+            const next = {
+                bankCoins: currentBank - spend,
+                totalRevives: (Number(prev.totalRevives) || 0) + 1,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            next.statsSeal = sealPlayerStats(currentUserUid, { ...prev, ...next });
+            tx.set(docRef, next, { merge: true });
+        });
+        const snap = await docRef.get();
+        if (snap.exists) {
+            const cloudBank = snap.data().bankCoins;
+            if (cloudBank != null && Number.isFinite(Number(cloudBank))) {
+                const key = getCoinsStorageKey();
+                totalCoinsAllTime = Math.max(0, Number(cloudBank) | 0);
+                if (key) {
+                    try { localStorage.setItem(key, String(totalCoinsAllTime)); } catch (e) {}
+                }
+                setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
+                updateCoinHudDisplay();
             }
-            setMenuTotalCoinsCountDisplay(totalCoinsAllTime);
-            updateCoinHudDisplay();
         }
     } catch (err) {}
 }
@@ -2250,9 +2344,7 @@ async function performAuth(type, name, pass) {
         let cred;
         if (type === 'reg') {
             cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-            if (fbFunctions) {
-                await fbFunctions.httpsCallable('registerPlayer')({ nickname: name });
-            }
+            await ensurePlayerProfile(name, cred.user.uid);
             applyAuthState(name, cred.user.uid);
         } else {
             let lastErr = null;
@@ -2267,6 +2359,7 @@ async function performAuth(type, name, pass) {
             if (!cred) throw lastErr;
             const snap = await fbDb.collection('players').doc(cred.user.uid).get();
             const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
+            if (!snap.exists) await ensurePlayerProfile(name, cred.user.uid);
             applyAuthState(profileName, cred.user.uid);
         }
         persistCurrentUser();
@@ -2280,6 +2373,7 @@ async function performAuth(type, name, pass) {
                 const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
                 const snap = await fbDb.collection('players').doc(cred.user.uid).get();
                 const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
+                if (!snap.exists) await ensurePlayerProfile(name, cred.user.uid);
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
                 alert('Этот username уже зарегистрирован. Выполнен вход.');
@@ -2309,7 +2403,9 @@ async function repairCloudBestScores() {
     if (!firebaseEnabled || !currentUserUid || !fbDb || !getLifetimeStatsStorageKey()) return;
     const local = loadLocalLifetimeStats();
     try {
-        const snap = await fbDb.collection('players').doc(currentUserUid).get();
+        await ensurePlayerProfile(currentUser, currentUserUid);
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const snap = await docRef.get();
         if (!snap.exists) return;
         const d = snap.data();
         const cloudKills = Number(d.kills) || 0;
@@ -2321,6 +2417,15 @@ async function repairCloudBestScores() {
             local.bestDistKm = bestDist;
             saveLocalLifetimeStats(local);
         }
+
+        const patch = {};
+        if ((local.bestKills || 0) > cloudKills) patch.kills = local.bestKills;
+        if ((local.bestDistKm || 0) > cloudDist) patch.distKm = local.bestDistKm;
+        if (!Object.keys(patch).length) return;
+
+        patch.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+        patch.statsSeal = sealPlayerStats(currentUserUid, { ...d, ...patch });
+        await docRef.set(patch, { merge: true });
     } catch (err) {}
 }
 
@@ -2336,24 +2441,69 @@ async function saveCurrentUserStats() {
 
     mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
 
-    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return;
+    if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+
+    const audit = auditRunPayload({
+        kills: runKills,
+        shots: runShots,
+        distKm: runKm,
+        coins: runCoins,
+        icePickups: runIce,
+        durationMs
+    });
+    if (!audit.ok) return;
+
     try {
-        await fbFunctions.httpsCallable('submitGameRun')({
-            kills: runKills,
-            shots: runShots,
-            distKm: runKm,
-            coins: runCoins,
-            icePickups: runIce,
-            durationMs
+        await ensurePlayerProfile(currentUser, currentUserUid);
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        await fbDb.runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            if (!snap.exists) return;
+            const prev = snap.data();
+            const nextKills = Math.max(Number(prev.kills) || 0, runKills);
+            const nextDist = Math.max(Number(prev.distKm) || 0, runKm);
+            const newTotalKills = (Number(prev.totalKills) || 0) + runKills;
+            const newTotalShots = (Number(prev.totalShots) || 0) + runShots;
+            if (newTotalShots > 0 && newTotalKills / newTotalShots > _RG.r) return;
+
+            const patch = {
+                nickname: currentUser,
+                nicknameUpper: currentUser.toUpperCase(),
+                nicknameLower: currentUser.toLowerCase(),
+                kills: nextKills,
+                distKm: nextDist,
+                gamesPlayed: (Number(prev.gamesPlayed) || 0) + 1,
+                totalKills: newTotalKills,
+                totalDistKm: Number(((Number(prev.totalDistKm) || 0) + runKm).toFixed(6)),
+                lifetimeCoinsCollected: (Number(prev.lifetimeCoinsCollected) || 0) + runCoins,
+                totalShots: newTotalShots,
+                totalIcePickups: (Number(prev.totalIcePickups) || 0) + runIce,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            patch.statsSeal = sealPlayerStats(currentUserUid, { ...prev, ...patch });
+            tx.set(docRef, patch, { merge: true });
         });
     } catch (err) {}
 }
 
 async function creditBankCoinsToCloud(delta) {
     const n = delta | 0;
-    if (!firebaseEnabled || !currentUserUid || !fbFunctions || n <= 0) return;
+    if (!firebaseEnabled || !currentUserUid || !fbDb || n <= 0 || n > _RG.c) return;
     try {
-        await fbFunctions.httpsCallable('creditBankCoins')({ delta: n });
+        const docRef = fbDb.collection('players').doc(currentUserUid);
+        await fbDb.runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            if (!snap.exists) return;
+            const prev = snap.data();
+            const nextBank = (Number(prev.bankCoins) || 0) + n;
+            if (nextBank > 10000000) throw new Error('cap');
+            const patch = {
+                bankCoins: nextBank,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            patch.statsSeal = sealPlayerStats(currentUserUid, { ...prev, ...patch });
+            tx.set(docRef, patch, { merge: true });
+        });
     } catch (err) {}
 }
 
@@ -2651,7 +2801,11 @@ window.addEventListener('DOMContentLoaded', () => {
             currentUserUid = user.uid;
             try {
                 const snap = await fbDb.collection('players').doc(user.uid).get();
-                const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : (currentUser || 'ГОСТЬ');
+                let profileName = snap.exists && snap.data().nickname ? snap.data().nickname : (currentUser || 'ГОСТЬ');
+                if (!snap.exists && currentUser) {
+                    await ensurePlayerProfile(currentUser, user.uid);
+                    profileName = currentUser;
+                }
                 applyAuthState(profileName, user.uid);
                 persistCurrentUser();
             } catch (err) {
@@ -3181,42 +3335,17 @@ function loadTotalCoinsForCurrentAuth() {
     updateCoinHudDisplay();
 }
 
-async function migrateMyBankCoinsFromLocal() {
-    if (!firebaseEnabled || !currentUserUid || !fbFunctions) return null;
-    try {
-        const res = await fbFunctions.httpsCallable('migrateMyBankCoins')({
-            localBank: Math.max(0, totalCoinsAllTime | 0)
-        });
-        return res && res.data ? res.data : null;
-    } catch (err) {
-        return null;
-    }
-}
-
 async function syncBankCoinsFromCloud() {
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
     const key = getCoinsStorageKey();
     if (!key) return;
     try {
         const docRef = fbDb.collection('players').doc(currentUserUid);
-        let snap = await docRef.get();
+        const snap = await docRef.get();
         if (!snap.exists) return;
 
-        let raw = snap.data().bankCoins;
-        let hasCloud = raw != null && Number.isFinite(Number(raw));
-        if (!hasCloud) {
-            const migration = await migrateMyBankCoinsFromLocal();
-            if (migration && migration.bankCoins != null && Number.isFinite(Number(migration.bankCoins))) {
-                raw = migration.bankCoins;
-                hasCloud = true;
-            } else {
-                snap = await docRef.get();
-                if (snap.exists) {
-                    raw = snap.data().bankCoins;
-                    hasCloud = raw != null && Number.isFinite(Number(raw));
-                }
-            }
-        }
+        const raw = snap.data().bankCoins;
+        const hasCloud = raw != null && Number.isFinite(Number(raw));
         if (!hasCloud) return;
 
         const c = Math.max(0, Number(raw) | 0);
