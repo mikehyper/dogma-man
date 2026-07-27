@@ -1778,7 +1778,7 @@
         <div class="modal-box" id="scoreboard-box">
             <button class="modal-close" onclick="closeModal('score-modal')">×</button>
             <div class="score-header-row">
-                <h2>ТОП БОЙЦОВ</h2>
+                <h2 id="scoreboard-title">ТОП БОЙЦОВ</h2>
                 <div class="search-container">
                     <input type="text" id="score-search" placeholder="ПОИСК..." oninput="filterScoreboard()">
                     <img src="img/search.png" alt="Search">
@@ -1832,7 +1832,7 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeMobileScreen('mobile-score-screen')">×</button>
             <div class="score-header-row">
-                <h2>ТОП БОЙЦОВ</h2>
+                <h2 id="mobile-scoreboard-title">ТОП БОЙЦОВ</h2>
                 <div class="search-container">
                     <input type="text" id="mobile-score-search" placeholder="ПОИСК..." oninput="filterScoreboard()">
                     <img src="img/search.png" alt="Search">
@@ -1931,6 +1931,91 @@ function isFirebaseConfigured() {
     return Object.values(firebaseConfig).every((v) => typeof v === 'string' && !v.includes('YOUR_'));
 }
 
+const CAMPAIGN_COLLECTIONS = { berloga: 'players_berloga' };
+const CAMPAIGN_LABELS = { berloga: 'BERLOGA' };
+let activeCampaign = null;
+let campaignParticipant = false;
+
+function parseCampaignFromUrl() {
+    try {
+        const params = new URLSearchParams(location.search);
+        const q = (params.get('campaign') || '').toLowerCase();
+        if (CAMPAIGN_COLLECTIONS[q]) return q;
+        const path = location.pathname.replace(/\/+$/, '').toLowerCase();
+        if (path.endsWith('/berloga')) return 'berloga';
+        const hash = (location.hash || '').replace(/^#/, '').toLowerCase();
+        if (CAMPAIGN_COLLECTIONS[hash]) return hash;
+    } catch (e) {}
+    return null;
+}
+
+function initCampaignContext() {
+    const fromUrl = parseCampaignFromUrl();
+    if (fromUrl) {
+        activeCampaign = fromUrl;
+        try { sessionStorage.setItem('dogma_campaign', fromUrl); } catch (e) {}
+        return;
+    }
+    try {
+        const stored = sessionStorage.getItem('dogma_campaign');
+        if (stored && CAMPAIGN_COLLECTIONS[stored]) {
+            activeCampaign = stored;
+            return;
+        }
+    } catch (e) {}
+    activeCampaign = null;
+}
+
+function shouldOpenLeaderboardFromUrl() {
+    try {
+        const params = new URLSearchParams(location.search);
+        const v = (params.get('open') || '').toLowerCase();
+        return v === 'leaderboard' || v === 'scoreboard';
+    } catch (e) {}
+    return false;
+}
+
+async function isBerlogaExclusiveUser(uid) {
+    if (!firebaseEnabled || !fbDb || !uid || activeCampaign) return false;
+    try {
+        const [globalSnap, berlogaSnap] = await Promise.all([
+            fbDb.collection('players').doc(uid).get(),
+            fbDb.collection(CAMPAIGN_COLLECTIONS.berloga).doc(uid).get()
+        ]);
+        return berlogaSnap.exists && !globalSnap.exists;
+    } catch (e) {}
+    return false;
+}
+
+function getPlayersCollectionName() {
+    if (activeCampaign && CAMPAIGN_COLLECTIONS[activeCampaign]) {
+        return CAMPAIGN_COLLECTIONS[activeCampaign];
+    }
+    return 'players';
+}
+
+function getPlayersCollection() {
+    return fbDb.collection(getPlayersCollectionName());
+}
+
+function getCampaignStorageSuffix() {
+    return activeCampaign ? '_' + activeCampaign : '';
+}
+
+function applyCampaignUI() {
+    const label = activeCampaign && CAMPAIGN_LABELS[activeCampaign];
+    const title = label ? 'ТОП БОЙЦОВ — ' + label : 'ТОП БОЙЦОВ';
+    ['scoreboard-title', 'mobile-scoreboard-title'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = title;
+    });
+    document.body.classList.toggle('campaign-active', !!activeCampaign);
+    if (activeCampaign) document.body.setAttribute('data-campaign', activeCampaign);
+    else document.body.removeAttribute('data-campaign');
+}
+
+initCampaignContext();
+
 /* Лимиты забега — дублируют firestore.rules; разнесены, чтобы не искать одним grep по репо. */
 const _RG = {
     k: 3000, s: 20000, d: 500, c: 5000, i: 200,
@@ -2001,10 +2086,11 @@ function playerDocBaseFields(nickname) {
 
 async function ensurePlayerProfile(nickname, uid) {
     if (!firebaseEnabled || !fbDb || !uid) return;
-    const docRef = fbDb.collection('players').doc(uid);
+    const docRef = getPlayersCollection().doc(uid);
     const snap = await docRef.get();
     if (snap.exists) return;
     const base = playerDocBaseFields(nickname);
+    if (activeCampaign) base.campaign = activeCampaign;
     base.statsSeal = sealPlayerStats(uid, base);
     await docRef.set(base);
 }
@@ -2145,8 +2231,9 @@ function persistCurrentUser() {
 }
 
 function getLifetimeStatsStorageKey() {
-    if (currentUserUid) return 'dogma_lifetime_uid_' + currentUserUid;
-    if (currentUser) return 'dogma_lifetime_name_' + currentUser;
+    const suffix = getCampaignStorageSuffix();
+    if (currentUserUid) return 'dogma_lifetime_uid_' + currentUserUid + suffix;
+    if (currentUser) return 'dogma_lifetime_name_' + currentUser + suffix;
     return null;
 }
 
@@ -2253,7 +2340,7 @@ async function openPlayerStats() {
 
     if (firebaseEnabled && currentUserUid && fbDb) {
         try {
-            const snap = await fbDb.collection('players').doc(currentUserUid).get();
+            const snap = await getPlayersCollection().doc(currentUserUid).get();
             if (snap.exists) {
                 const d = snap.data();
                 const cGames = Number(d.gamesPlayed || 0);
@@ -2294,10 +2381,12 @@ async function openPlayerStats() {
 async function incrementLifetimeRevivesCloud(bankSpend) {
     mergeLocalReviveCount();
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    if (activeCampaign && !campaignParticipant) return;
+    if (await isBerlogaExclusiveUser(currentUserUid)) return;
     const spend = Math.max(0, bankSpend | 0);
     if (spend > 100) return;
     try {
-        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const docRef = getPlayersCollection().doc(currentUserUid);
         await fbDb.runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
             if (!snap.exists) return;
@@ -2345,6 +2434,7 @@ async function performAuth(type, name, pass) {
         if (type === 'reg') {
             cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
             await ensurePlayerProfile(name, cred.user.uid);
+            campaignParticipant = true;
             applyAuthState(name, cred.user.uid);
         } else {
             let lastErr = null;
@@ -2357,9 +2447,11 @@ async function performAuth(type, name, pass) {
                 }
             }
             if (!cred) throw lastErr;
-            const snap = await fbDb.collection('players').doc(cred.user.uid).get();
+            const snap = await getPlayersCollection().doc(cred.user.uid).get();
             const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
-            if (!snap.exists) await ensurePlayerProfile(name, cred.user.uid);
+            campaignParticipant = snap.exists;
+            if (!snap.exists && (type === 'reg' || !activeCampaign)) await ensurePlayerProfile(name, cred.user.uid);
+            if (type === 'reg' && activeCampaign) campaignParticipant = true;
             applyAuthState(profileName, cred.user.uid);
         }
         persistCurrentUser();
@@ -2371,9 +2463,14 @@ async function performAuth(type, name, pass) {
             try {
                 // Если ник уже существует, пытаемся войти с указанным паролем.
                 const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
-                const snap = await fbDb.collection('players').doc(cred.user.uid).get();
+                const snap = await getPlayersCollection().doc(cred.user.uid).get();
                 const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
-                if (!snap.exists) await ensurePlayerProfile(name, cred.user.uid);
+                campaignParticipant = snap.exists;
+                if (!snap.exists && !activeCampaign) await ensurePlayerProfile(name, cred.user.uid);
+                if (!snap.exists && activeCampaign) {
+                    alert('Этот username уже зарегистрирован в основной игре. Для акции BERLOGA нужен новый username.');
+                    return false;
+                }
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
                 alert('Этот username уже зарегистрирован. Выполнен вход.');
@@ -2401,10 +2498,12 @@ async function performAuth(type, name, pass) {
 
 async function repairCloudBestScores() {
     if (!firebaseEnabled || !currentUserUid || !fbDb || !getLifetimeStatsStorageKey()) return;
+    if (activeCampaign && !campaignParticipant) return;
+    if (await isBerlogaExclusiveUser(currentUserUid)) return;
     const local = loadLocalLifetimeStats();
     try {
-        await ensurePlayerProfile(currentUser, currentUserUid);
-        const docRef = fbDb.collection('players').doc(currentUserUid);
+        if (!activeCampaign) await ensurePlayerProfile(currentUser, currentUserUid);
+        const docRef = getPlayersCollection().doc(currentUserUid);
         const snap = await docRef.get();
         if (!snap.exists) return;
         const d = snap.data();
@@ -2442,6 +2541,8 @@ async function saveCurrentUserStats() {
     mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
 
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    if (activeCampaign && !campaignParticipant) return;
+    if (await isBerlogaExclusiveUser(currentUserUid)) return;
 
     const audit = auditRunPayload({
         kills: runKills,
@@ -2455,7 +2556,7 @@ async function saveCurrentUserStats() {
 
     try {
         await ensurePlayerProfile(currentUser, currentUserUid);
-        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const docRef = getPlayersCollection().doc(currentUserUid);
         await fbDb.runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
             if (!snap.exists) return;
@@ -2489,8 +2590,10 @@ async function saveCurrentUserStats() {
 async function creditBankCoinsToCloud(delta) {
     const n = delta | 0;
     if (!firebaseEnabled || !currentUserUid || !fbDb || n <= 0 || n > _RG.c) return;
+    if (activeCampaign && !campaignParticipant) return;
+    if (await isBerlogaExclusiveUser(currentUserUid)) return;
     try {
-        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const docRef = getPlayersCollection().doc(currentUserUid);
         await fbDb.runTransaction(async (tx) => {
             const snap = await tx.get(docRef);
             if (!snap.exists) return;
@@ -2510,7 +2613,7 @@ async function creditBankCoinsToCloud(delta) {
 async function loadCloudScores() {
     if (!firebaseEnabled || !fbDb) return null;
     try {
-        const snap = await fbDb.collection('players').orderBy('kills', 'desc').limit(500).get();
+        const snap = await getPlayersCollection().orderBy('kills', 'desc').limit(500).get();
         const items = [];
         snap.forEach((doc) => {
             const d = doc.data();
@@ -2563,6 +2666,7 @@ async function logout() {
     if (firebaseEnabled && fbAuth) {
         try { await fbAuth.signOut(); } catch (err) {}
     }
+    campaignParticipant = false;
     applyAuthState(null);
     persistCurrentUser();
 }
@@ -2612,7 +2716,7 @@ async function openScoreboard(focusCurrentUser = true) {
         globalScores = [];
     }
 
-    if (currentUser && !globalScores.some((x) => x.current)) {
+    if (currentUser && (!activeCampaign || campaignParticipant) && !globalScores.some((x) => x.current)) {
         globalScores.push({
             name: normalizeTelegramUsername(currentUser),
             kills: enemiesDefeated,
@@ -2622,7 +2726,7 @@ async function openScoreboard(focusCurrentUser = true) {
         globalScores.sort((a,b) => b.kills - a.kills);
     }
 
-    if (!currentUser && !currentUserUid && !globalScores.some((x) => x.current)) {
+    if (!activeCampaign && !currentUser && !currentUserUid && !globalScores.some((x) => x.current)) {
         globalScores.push({
             name: 'гость',
             kills: enemiesDefeated,
@@ -2777,6 +2881,7 @@ let lastTouchEnd = 0;
 
 window.addEventListener('DOMContentLoaded', () => {
     initFirebase();
+    applyCampaignUI();
 
     try {
         const savedUser = localStorage.getItem('dogma_current_user');
@@ -2794,16 +2899,19 @@ window.addEventListener('DOMContentLoaded', () => {
     if (firebaseEnabled && fbAuth) {
         fbAuth.onAuthStateChanged(async (user) => {
             if (!user) {
+                campaignParticipant = false;
                 applyAuthState(null, null);
                 persistCurrentUser();
                 return;
             }
             currentUserUid = user.uid;
             try {
-                const snap = await fbDb.collection('players').doc(user.uid).get();
+                const snap = await getPlayersCollection().doc(user.uid).get();
                 let profileName = snap.exists && snap.data().nickname ? snap.data().nickname : (currentUser || 'ГОСТЬ');
-                if (!snap.exists && currentUser) {
+                campaignParticipant = snap.exists;
+                if (!snap.exists && currentUser && !activeCampaign && !(await isBerlogaExclusiveUser(user.uid))) {
                     await ensurePlayerProfile(currentUser, user.uid);
+                    campaignParticipant = true;
                     profileName = currentUser;
                 }
                 applyAuthState(profileName, user.uid);
@@ -2813,6 +2921,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 persistCurrentUser();
             }
         });
+    }
+
+    if (shouldOpenLeaderboardFromUrl()) {
+        setTimeout(() => { openScoreboard(false); }, 400);
     }
 
     const ctrlText = document.getElementById('controls-text');
@@ -3263,8 +3375,9 @@ function performReviveFromDeath() {
 }
 
 function getCoinsStorageKey() {
-    if (currentUserUid) return 'dogma_total_coins_uid_' + currentUserUid;
-    if (currentUser) return 'dogma_total_coins_name_' + currentUser;
+    const suffix = getCampaignStorageSuffix();
+    if (currentUserUid) return 'dogma_total_coins_uid_' + currentUserUid + suffix;
+    if (currentUser) return 'dogma_total_coins_name_' + currentUser + suffix;
     return null;
 }
 
@@ -3314,7 +3427,7 @@ function loadTotalCoinsForCurrentAuth() {
     if (vPri != null) candidates.push(vPri);
     /* После входа по Firebase копилка могла быть в ключе по нику, а uid-ключ пустой — берём максимум, чтобы не терять монеты на ПК. */
     if (currentUserUid && currentUser) {
-        const nameKey = 'dogma_total_coins_name_' + currentUser;
+        const nameKey = 'dogma_total_coins_name_' + currentUser + getCampaignStorageSuffix();
         if (nameKey !== primaryKey) {
             const vName = readCoinsFromStorageKey(nameKey);
             if (vName != null) candidates.push(vName);
@@ -3337,10 +3450,12 @@ function loadTotalCoinsForCurrentAuth() {
 
 async function syncBankCoinsFromCloud() {
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
+    if (activeCampaign && !campaignParticipant) return;
+    if (await isBerlogaExclusiveUser(currentUserUid)) return;
     const key = getCoinsStorageKey();
     if (!key) return;
     try {
-        const docRef = fbDb.collection('players').doc(currentUserUid);
+        const docRef = getPlayersCollection().doc(currentUserUid);
         const snap = await docRef.get();
         if (!snap.exists) return;
 
