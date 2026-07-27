@@ -3275,6 +3275,11 @@ const deathReviveBtnEl = document.getElementById('death-revive-btn');
 const deathReviveBankCountEl = document.getElementById('death-revive-bank-count');
 
 let enemiesDefeated = 0, ammo = 20, hp = 100, lastHpForBar = 100, gameSpeed = 9, baseSpeed = 9, isGameOver = false, frame = 0, frameAcc = 0, animationId, isFirstRun = true, distance = 0, lastSpawnDist = 0, nextSpawnGoal = 500, lastCoinSpawnDistance = 0, coinsCollected = 0, shotsThisRun = 0, icePickupsThisRun = 0, zombiesToBonus = 0, airKills = 0, lastShotTime = 0, isFiring = false, obstacles = [], bullets = [], particles = [], gameOverTimer = 0, shakeTime = 0, lastTime = 0, invulFrames = 0, boostTimer = 0, superShotTimer = 0, shieldTimer = 0, canRestart = false, cameraScrollY = 0, boostExitSafety = 0, targetBaseSpeed = 9, isBraking = false, cheatLife = false, cheatBuffer = "";
+let hiddenGameLoopId = null, isCatchUp = false, lastFrameAtMs = 0, gameLoopSuspended = false;
+const TAB_HIDDEN_LOOP_MS = 16;
+const TAB_HIDDEN_CATCHUP_MAX_MS = 30000;
+const TAB_HIDDEN_CATCHUP_STEP_MS = 16.6;
+const TAB_HIDDEN_CATCHUP_MAX_STEPS = 1800;
 let reviveOfferActive = false, reviveOfferDeadline = 0, reviveClockNextPlay = 0, reviveSplashBgStarted = false, gameOverMusicFadeInterval = null;
 const REVIVE_COST = 100;
 const REVIVE_DURATION_MS = 3000;
@@ -4037,8 +4042,61 @@ function spawnObstacle() {
     }
 }
 
+function stopHiddenGameLoop() {
+    if (!hiddenGameLoopId) return;
+    clearInterval(hiddenGameLoopId);
+    hiddenGameLoopId = null;
+}
+
+function startHiddenGameLoop() {
+    if (hiddenGameLoopId || isModalOpen) return;
+    hiddenGameLoopId = setInterval(() => { render(performance.now()); }, TAB_HIDDEN_LOOP_MS);
+}
+
+function catchUpHiddenGameplay() {
+    if (isModalOpen || !lastFrameAtMs) return;
+    const gapMs = Math.min(Math.max(0, performance.now() - lastFrameAtMs), TAB_HIDDEN_CATCHUP_MAX_MS);
+    if (gapMs < 40) return;
+
+    const steps = Math.min(Math.ceil(gapMs / TAB_HIDDEN_CATCHUP_STEP_MS), TAB_HIDDEN_CATCHUP_MAX_STEPS);
+    isCatchUp = true;
+    let simTime = performance.now() - gapMs;
+    for (let i = 0; i < steps; i++) {
+        simTime += TAB_HIDDEN_CATCHUP_STEP_MS;
+        lastTime = simTime - TAB_HIDDEN_CATCHUP_STEP_MS;
+        render(simTime);
+        if (isGameOver && !reviveOfferActive) break;
+    }
+    isCatchUp = false;
+    lastTime = 0;
+}
+
+function handleVisibilityChange() {
+    if (document.hidden) {
+        if (!animationId) return;
+        gameLoopSuspended = true;
+        cancelAnimationFrame(animationId);
+        animationId = 0;
+        shiftBoostKeyHeld = false;
+        mobileCenterBoostHeld = false;
+        startHiddenGameLoop();
+        return;
+    }
+    if (!gameLoopSuspended) return;
+    gameLoopSuspended = false;
+    stopHiddenGameLoop();
+    catchUpHiddenGameplay();
+    lastTime = 0;
+    animationId = requestAnimationFrame(render);
+}
+
 function render(currentTime) {
-    if (!lastTime) lastTime = currentTime; let ts = Math.min((currentTime - lastTime) / 16.6, 2); lastTime = currentTime;
+    const now = (typeof currentTime === 'number') ? currentTime : performance.now();
+    if (!lastTime) lastTime = now;
+    const tsCap = isCatchUp ? 10 : 2;
+    let ts = Math.min((now - lastTime) / 16.6, tsCap);
+    lastTime = now;
+    lastFrameAtMs = now;
     frameAcc += ts;
     while (frameAcc >= 1) { frame++; frameAcc -= 1; } 
     const worldTs = isGameOver ? 0 : ts;
@@ -4227,7 +4285,7 @@ function render(currentTime) {
         if (gameOverTimer < -60 && !canRestart && gameOverCoinBankDone) { canRestart = true; controlsText.innerText = isMobileDevice ? "ТАПАЙ ДЛЯ ПРОДОЛЖЕНИЯ" : "ЖМИ ПРОБЕЛ ДЛЯ ПРОДОЛЖЕНИЯ"; controlsText.classList.add('show-text'); }
         }
     }
-    animationId = requestAnimationFrame(render);
+    if (!isCatchUp && !document.hidden) animationId = requestAnimationFrame(render);
 }
 
 function drawCitylineLayer(cityData, camX, camY, panelColor) { const gy = getGroundY(), tw = cityData.totalWidth; ctx.fillStyle = panelColor; ctx.fillRect(0, gy + camY + 8, canvas.width, 3500); cityData.objects.forEach(obj => { let dx = (obj.x - camX) % tw; if (dx < -1500) dx += tw; if (dx > canvas.width + 1500) dx -= tw; ctx.drawImage(obj.img, dx, gy - (obj.img.height * obj.scale) + camY + 12, obj.img.width * obj.scale, obj.img.height * obj.scale); }); }
@@ -4298,7 +4356,12 @@ function start() {
     }
     runStartedAtMs = performance.now();
     isGameOver = false; isFirstRun = false; enemiesDefeated = 0; ammo = 20; distance = 0; lastSpawnDist = 0; lastCoinSpawnDistance = 0; coinsCollected = 0; shotsThisRun = 0; icePickupsThisRun = 0; gameOverTimer = 0; if (distValEl) distValEl.innerHTML = '0м'; updateCoinHudDisplay(); if (coinHudRowEl) { if (coinHudRowEl._coinPickClear) { clearTimeout(coinHudRowEl._coinPickClear); coinHudRowEl._coinPickClear = null; } coinHudRowEl.classList.remove('coin-pick-pulse'); } if (menuOverCoinsEl) { menuOverCoinsEl.hidden = true; menuOverCoinsEl.setAttribute('aria-hidden', 'true'); } topInfoText.innerText = "НА ПЛАНЕТУ НАПАЛИ КОСМИЧЕСКИЕ МОНСТРЫ"; nextIceCheckpointKm = 30; lastIcePickupKm = -999; updateAmmo(20); enemiesEl.innerText = enemiesDefeated; hp = 100; updateHPBar(); invulFrames = 0; boostTimer = 0; superShotTimer = 0; shieldTimer = 0; boostExitSafety = 0; boostFuel = 1; boostKillsProgress = 0; shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; updateBoostChargeBar(); baseSpeed = 9; gameSpeed = 9; isBraking = false; frame = 0; frameAcc = 0; obstacles = []; bullets = []; particles = []; canRestart = false; cameraScrollY = 0;
-    hero.init(); cancelAnimationFrame(animationId); requestAnimationFrame(render); 
+    hero.init();
+    stopHiddenGameLoop();
+    gameLoopSuspended = false;
+    lastTime = 0;
+    cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(render);
     syncMobileTouchNav();
 }
 
@@ -4327,6 +4390,7 @@ window.addEventListener('keyup', (e) => {
     if (e.code === 'KeyX') shiftBoostKeyHeld = false;
 }, true);
 window.addEventListener('blur', () => { shiftBoostKeyHeld = false; mobileCenterBoostHeld = false; });
+document.addEventListener('visibilitychange', handleVisibilityChange);
 window.addEventListener('touchstart', (e) => {
     if (isModalOpen) return;
     const target = e.target;
