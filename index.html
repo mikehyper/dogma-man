@@ -1739,7 +1739,7 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('reg-modal')">×</button>
             <h2>РЕГИСТРАЦИЯ</h2>
-            <input type="text" id="reg-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
+            <input type="text" id="reg-name" placeholder="ВАШ USERNAME В TELEGRAM (как @nickname)">
             <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ (ОТ 6 СИМВОЛОВ)">
             <button class="dogma-btn" onclick="handleAuth('reg')">ОКЕЙ</button>
         </div>
@@ -1749,7 +1749,7 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('login-modal')">×</button>
             <h2>ВХОД</h2>
-            <input type="text" id="login-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
+            <input type="text" id="login-name" placeholder="ВАШ USERNAME В TELEGRAM (как @nickname)">
             <input type="password" id="login-pass" placeholder="ВАШ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="handleAuth('login')">ОКЕЙ</button>
         </div>
@@ -2440,14 +2440,21 @@ async function finalizeAuthProfile(name, uid, type) {
             return berlogaSnap.data().nickname || name;
         }
         if (globalSnap.exists) {
-            campaignParticipant = false;
-            if (type === 'reg') {
-                alert('Этот username уже зарегистрирован в основной игре. Для акции BERLOGA нужен новый username.');
-                const conflict = new Error('berloga_main_conflict');
-                conflict.code = 'berloga/main-user';
-                throw conflict;
+            const telegramNick = normalizeTelegramUsername(globalSnap.data().nickname || name);
+            try {
+                await ensurePlayerProfile(telegramNick, uid);
+            } catch (profileErr) {
+                const denied = profileErr && (profileErr.code === 'permission-denied' || String(profileErr.message || '').includes('permission'));
+                alert(denied
+                    ? 'Не удалось создать профиль акции BERLOGA. Попробуйте позже или напишите организатору.'
+                    : ('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети')));
+                throw profileErr;
             }
-            return globalSnap.data().nickname || name;
+            campaignParticipant = true;
+            if (type === 'reg') {
+                alert('Вы уже играли в основную версию. Вы добавлены в акцию BERLOGA под @' + telegramNick + '.');
+            }
+            return telegramNick;
         }
         try {
             await ensurePlayerProfile(name, uid);
@@ -2486,10 +2493,10 @@ function authFailureMessage(type, code) {
     }
     if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
         if (activeCampaign && type === 'login') {
-            return 'Аккаунт не найден или неверный пароль.\n\nДля участия в акции BERLOGA нажмите «РЕГИСТРАЦИЯ», придумайте пароль (от 6 символов) и новый username, если вы уже играли в основную версию.';
+            return 'Аккаунт не найден или неверный пароль.\n\nУкажите ваш настоящий Telegram username (как в профиле Telegram). Если ещё не регистрировались — нажмите «РЕГИСТРАЦИЯ» (пароль от 6 символов).';
         }
         if (activeCampaign && type === 'reg') {
-            return 'Этот username уже занят или неверный пароль.\n\nЕсли вы уже регистрировались в акции — нажмите «ВХОД». Если играли в основную версию — выберите другой username.';
+            return 'Этот Telegram username уже занят или неверный пароль.\n\nЕсли вы уже играли — нажмите «ВХОД» с тем же username и паролем. Username должен совпадать с вашим Telegram.';
         }
         return 'Неверный пароль или Telegram username.';
     }
@@ -2527,7 +2534,6 @@ async function performAuth(type, name, pass) {
         return true;
     } catch (err) {
         const code = err && err.code ? err.code : '';
-        if (code === 'berloga/main-user') return false;
 
         if (type === 'reg' && code === 'auth/email-already-in-use') {
             try {
@@ -2536,16 +2542,15 @@ async function performAuth(type, name, pass) {
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
                 if (activeCampaign && campaignParticipant) {
-                    alert('Вы уже участвовали в акции BERLOGA. Выполнен вход.');
+                    // finalizeAuthProfile уже показал сообщение, если пользователь из основной игры
                 } else {
                     alert('Этот username уже зарегистрирован. Выполнен вход.');
                 }
                 return true;
             } catch (loginErr) {
                 const loginCode = loginErr && loginErr.code ? loginErr.code : '';
-                if (loginCode === 'berloga/main-user') return false;
                 const msg = authFailureMessage('reg', loginCode);
-                alert(msg || 'Этот username уже зарегистрирован. Нажмите «ВХОД» и введите верный пароль, либо выберите другой username для акции BERLOGA.');
+                alert(msg || 'Этот Telegram username уже занят. Нажмите «ВХОД» с вашим паролем или проверьте, что username совпадает с Telegram.');
                 return false;
             }
         }
@@ -2864,7 +2869,7 @@ function openMobileAuth(mode) {
     const passInput = document.getElementById('mobile-auth-pass');
     title.innerText = mode === 'reg' ? 'РЕГИСТРАЦИЯ' : 'ВХОД';
     nameInput.placeholder = activeCampaign
-        ? 'USERNAME TELEGRAM (5–32 символа)'
+        ? 'ВАШ USERNAME В TELEGRAM (@nickname)'
         : 'ЮЗЕРНЕЙМ В TELEGRAM';
     if (mode === 'reg') {
         passInput.placeholder = activeCampaign
