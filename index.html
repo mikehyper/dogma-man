@@ -1739,7 +1739,7 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('reg-modal')">×</button>
             <h2>РЕГИСТРАЦИЯ</h2>
-            <input type="text" id="reg-name" placeholder="ВАШ USERNAME В TELEGRAM (как @nickname)">
+            <input type="text" id="reg-name" placeholder="ВАШ USERNAME В TELEGRAM">
             <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ (ОТ 6 СИМВОЛОВ)">
             <button class="dogma-btn" onclick="handleAuth('reg')">ОКЕЙ</button>
         </div>
@@ -1749,7 +1749,7 @@
         <div class="modal-box">
             <button class="modal-close" onclick="closeModal('login-modal')">×</button>
             <h2>ВХОД</h2>
-            <input type="text" id="login-name" placeholder="ВАШ USERNAME В TELEGRAM (как @nickname)">
+            <input type="text" id="login-name" placeholder="ВАШ USERNAME В TELEGRAM">
             <input type="password" id="login-pass" placeholder="ВАШ ПАРОЛЬ В ИГРЕ">
             <button class="dogma-btn" onclick="handleAuth('login')">ОКЕЙ</button>
         </div>
@@ -2869,7 +2869,7 @@ function openMobileAuth(mode) {
     const passInput = document.getElementById('mobile-auth-pass');
     title.innerText = mode === 'reg' ? 'РЕГИСТРАЦИЯ' : 'ВХОД';
     nameInput.placeholder = activeCampaign
-        ? 'ВАШ USERNAME В TELEGRAM (@nickname)'
+        ? 'ВАШ USERNAME В TELEGRAM'
         : 'ЮЗЕРНЕЙМ В TELEGRAM';
     if (mode === 'reg') {
         passInput.placeholder = activeCampaign
