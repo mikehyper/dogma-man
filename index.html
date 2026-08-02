@@ -1935,6 +1935,7 @@ const CAMPAIGN_COLLECTIONS = { berloga: 'players_berloga' };
 const CAMPAIGN_LABELS = { berloga: 'BERLOGA' };
 let activeCampaign = null;
 let campaignParticipant = false;
+let authFlowInProgress = false;
 
 function parseCampaignFromUrl() {
     try {
@@ -2417,6 +2418,63 @@ async function incrementLifetimeRevivesCloud(bankSpend) {
     } catch (err) {}
 }
 
+function isFirestorePermissionError(err) {
+    if (!err) return false;
+    const code = err.code || '';
+    const msg = String(err.message || '');
+    return code === 'permission-denied' || /permission|insufficient/i.test(msg);
+}
+
+async function resolveProfileFromCloud(uid, fallbackName) {
+    const berlogaRef = fbDb.collection(CAMPAIGN_COLLECTIONS.berloga).doc(uid);
+    const globalRef = fbDb.collection('players').doc(uid);
+    const [berlogaSnap, globalSnap] = await Promise.all([berlogaRef.get(), globalRef.get()]);
+    let profileName = normalizeTelegramUsername(fallbackName || '');
+
+    if (activeCampaign) {
+        if (berlogaSnap.exists) {
+            campaignParticipant = true;
+            return berlogaSnap.data().nickname || profileName || 'ГОСТЬ';
+        }
+        if (globalSnap.exists) {
+            campaignParticipant = false;
+            return globalSnap.data().nickname || profileName || 'ГОСТЬ';
+        }
+        campaignParticipant = false;
+        return profileName || 'ГОСТЬ';
+    }
+
+    if (globalSnap.exists) {
+        campaignParticipant = true;
+        return globalSnap.data().nickname || profileName || 'ГОСТЬ';
+    }
+    if (berlogaSnap.exists) {
+        campaignParticipant = false;
+        return berlogaSnap.data().nickname || profileName || 'ГОСТЬ';
+    }
+    campaignParticipant = false;
+    return profileName || 'ГОСТЬ';
+}
+
+async function ensureBerlogaCampaignProfile(name, uid) {
+    const berlogaRef = fbDb.collection(CAMPAIGN_COLLECTIONS.berloga).doc(uid);
+    const berlogaSnap = await berlogaRef.get();
+    if (berlogaSnap.exists) {
+        campaignParticipant = true;
+        return berlogaSnap.data().nickname || name;
+    }
+
+    const globalRef = fbDb.collection('players').doc(uid);
+    const globalSnap = await globalRef.get();
+    const telegramNick = normalizeTelegramUsername(
+        globalSnap.exists && globalSnap.data().nickname ? globalSnap.data().nickname : name
+    );
+
+    await ensurePlayerProfile(telegramNick, uid);
+    campaignParticipant = true;
+    return telegramNick;
+}
+
 async function signInWithNicknameEmails(emails, pass) {
     let lastErr = null;
     for (const candidate of emails) {
@@ -2430,44 +2488,29 @@ async function signInWithNicknameEmails(emails, pass) {
 }
 
 async function finalizeAuthProfile(name, uid, type) {
+    if (activeCampaign) {
+        try {
+            const profileName = await ensureBerlogaCampaignProfile(name, uid);
+            if (type === 'reg') {
+                const globalSnap = await fbDb.collection('players').doc(uid).get();
+                if (globalSnap.exists) {
+                    alert('Вы уже играли в основную версию. Вы добавлены в акцию BERLOGA под @' + profileName + '.');
+                }
+            }
+            return profileName;
+        } catch (profileErr) {
+            if (isFirestorePermissionError(profileErr)) {
+                alert('Не удалось создать профиль акции BERLOGA. Попробуйте позже или напишите организатору.');
+            } else {
+                alert('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети'));
+            }
+            throw profileErr;
+        }
+    }
+
     const berlogaRef = fbDb.collection(CAMPAIGN_COLLECTIONS.berloga).doc(uid);
     const globalRef = fbDb.collection('players').doc(uid);
     const [berlogaSnap, globalSnap] = await Promise.all([berlogaRef.get(), globalRef.get()]);
-
-    if (activeCampaign) {
-        if (berlogaSnap.exists) {
-            campaignParticipant = true;
-            return berlogaSnap.data().nickname || name;
-        }
-        if (globalSnap.exists) {
-            const telegramNick = normalizeTelegramUsername(globalSnap.data().nickname || name);
-            try {
-                await ensurePlayerProfile(telegramNick, uid);
-            } catch (profileErr) {
-                const denied = profileErr && (profileErr.code === 'permission-denied' || String(profileErr.message || '').includes('permission'));
-                alert(denied
-                    ? 'Не удалось создать профиль акции BERLOGA. Попробуйте позже или напишите организатору.'
-                    : ('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети')));
-                throw profileErr;
-            }
-            campaignParticipant = true;
-            if (type === 'reg') {
-                alert('Вы уже играли в основную версию. Вы добавлены в акцию BERLOGA под @' + telegramNick + '.');
-            }
-            return telegramNick;
-        }
-        try {
-            await ensurePlayerProfile(name, uid);
-        } catch (profileErr) {
-            const denied = profileErr && (profileErr.code === 'permission-denied' || String(profileErr.message || '').includes('permission'));
-            alert(denied
-                ? 'Не удалось создать профиль акции BERLOGA. Попробуйте позже или напишите организатору.'
-                : ('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети')));
-            throw profileErr;
-        }
-        campaignParticipant = true;
-        return name;
-    }
 
     if (globalSnap.exists) {
         campaignParticipant = true;
@@ -2496,7 +2539,7 @@ function authFailureMessage(type, code) {
             return 'Аккаунт не найден или неверный пароль.\n\nУкажите ваш настоящий Telegram username (как в профиле Telegram). Если ещё не регистрировались — нажмите «РЕГИСТРАЦИЯ» (пароль от 6 символов).';
         }
         if (activeCampaign && type === 'reg') {
-            return 'Этот Telegram username уже занят или неверный пароль.\n\nЕсли вы уже играли — нажмите «ВХОД» с тем же username и паролем. Username должен совпадать с вашим Telegram.';
+            return 'Аккаунт с этим Telegram username уже создан.\n\nНажмите «ВХОД» и введите тот пароль, который задавали при первой регистрации (не новый).';
         }
         return 'Неверный пароль или Telegram username.';
     }
@@ -2515,6 +2558,7 @@ async function performAuth(type, name, pass) {
 
     const emails = nicknameEmailCandidates(name);
     const email = emails[0];
+    authFlowInProgress = true;
     try {
         let cred;
         if (type === 'reg') {
@@ -2523,11 +2567,28 @@ async function performAuth(type, name, pass) {
                 return false;
             }
             cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-            const profileName = await finalizeAuthProfile(name, cred.user.uid, 'reg');
+            let profileName;
+            try {
+                profileName = await finalizeAuthProfile(name, cred.user.uid, 'reg');
+            } catch (profileErr) {
+                try { await fbAuth.signOut(); } catch (signOutErr) {}
+                throw profileErr;
+            }
             applyAuthState(profileName, cred.user.uid);
         } else {
             cred = await signInWithNicknameEmails(emails, pass);
-            const profileName = await finalizeAuthProfile(name, cred.user.uid, 'login');
+            let profileName;
+            try {
+                profileName = await finalizeAuthProfile(name, cred.user.uid, 'login');
+            } catch (profileErr) {
+                if (isFirestorePermissionError(profileErr) && cred && cred.user) {
+                    alert('Пароль верный, но профиль акции не сохранился. Обновите страницу и попробуйте войти снова.');
+                    applyAuthState(name, cred.user.uid);
+                    persistCurrentUser();
+                    return false;
+                }
+                throw profileErr;
+            }
             applyAuthState(profileName, cred.user.uid);
         }
         persistCurrentUser();
@@ -2541,18 +2602,25 @@ async function performAuth(type, name, pass) {
                 const profileName = await finalizeAuthProfile(name, cred.user.uid, 'reg');
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
-                if (activeCampaign && campaignParticipant) {
-                    // finalizeAuthProfile уже показал сообщение, если пользователь из основной игры
-                } else {
+                if (!activeCampaign || !campaignParticipant) {
                     alert('Этот username уже зарегистрирован. Выполнен вход.');
                 }
                 return true;
             } catch (loginErr) {
                 const loginCode = loginErr && loginErr.code ? loginErr.code : '';
+                if (isFirestorePermissionError(loginErr) && fbAuth.currentUser) {
+                    alert('Пароль верный, но профиль акции не сохранился. Обновите страницу и попробуйте войти снова.');
+                    return false;
+                }
                 const msg = authFailureMessage('reg', loginCode);
-                alert(msg || 'Этот Telegram username уже занят. Нажмите «ВХОД» с вашим паролем или проверьте, что username совпадает с Telegram.');
+                alert(msg || 'Аккаунт уже создан. Нажмите «ВХОД» с паролем от первой регистрации.');
                 return false;
             }
+        }
+
+        if (isFirestorePermissionError(err)) {
+            alert('Не удалось сохранить профиль в базе. Попробуйте позже.');
+            return false;
         }
 
         const knownMsg = authFailureMessage(type, code);
@@ -2568,6 +2636,8 @@ async function performAuth(type, name, pass) {
 
         alert('Ошибка авторизации: ' + (err.message || 'проверьте данные'));
         return false;
+    } finally {
+        authFlowInProgress = false;
     }
 }
 
@@ -2983,6 +3053,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (firebaseEnabled && fbAuth) {
         fbAuth.onAuthStateChanged(async (user) => {
+            if (authFlowInProgress) return;
             if (!user) {
                 campaignParticipant = false;
                 applyAuthState(null, null);
@@ -2992,18 +3063,16 @@ window.addEventListener('DOMContentLoaded', () => {
             currentUserUid = user.uid;
             try {
                 const savedNick = normalizeTelegramUsername(currentUser || localStorage.getItem('dogma_current_user') || '');
-                let profileName = savedNick || 'ГОСТЬ';
-                if (savedNick) {
-                    profileName = await finalizeAuthProfile(savedNick, user.uid, 'login');
-                } else {
-                    const snap = await getPlayersCollection().doc(user.uid).get();
-                    if (snap.exists) {
-                        profileName = snap.data().nickname || profileName;
-                        campaignParticipant = true;
-                    } else {
-                        campaignParticipant = false;
+                let profileName = await resolveProfileFromCloud(user.uid, savedNick);
+
+                if (activeCampaign && !campaignParticipant && savedNick) {
+                    try {
+                        profileName = await ensureBerlogaCampaignProfile(savedNick, user.uid);
+                    } catch (recoverErr) {
+                        /* профиль создастся при следующем входе через форму */
                     }
                 }
+
                 applyAuthState(profileName, user.uid);
                 persistCurrentUser();
             } catch (err) {
