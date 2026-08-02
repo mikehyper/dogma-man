@@ -1740,7 +1740,7 @@
             <button class="modal-close" onclick="closeModal('reg-modal')">×</button>
             <h2>РЕГИСТРАЦИЯ</h2>
             <input type="text" id="reg-name" placeholder="ЮЗЕРНЕЙМ В TELEGRAM">
-            <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ В ИГРЕ">
+            <input type="password" id="reg-pass" placeholder="ПРИДУМАЙТЕ ПАРОЛЬ (ОТ 6 СИМВОЛОВ)">
             <button class="dogma-btn" onclick="handleAuth('reg')">ОКЕЙ</button>
         </div>
     </div>
@@ -2417,6 +2417,85 @@ async function incrementLifetimeRevivesCloud(bankSpend) {
     } catch (err) {}
 }
 
+async function signInWithNicknameEmails(emails, pass) {
+    let lastErr = null;
+    for (const candidate of emails) {
+        try {
+            return await fbAuth.signInWithEmailAndPassword(candidate, pass);
+        } catch (signInErr) {
+            lastErr = signInErr;
+        }
+    }
+    throw lastErr || new Error('sign-in failed');
+}
+
+async function finalizeAuthProfile(name, uid, type) {
+    const berlogaRef = fbDb.collection(CAMPAIGN_COLLECTIONS.berloga).doc(uid);
+    const globalRef = fbDb.collection('players').doc(uid);
+    const [berlogaSnap, globalSnap] = await Promise.all([berlogaRef.get(), globalRef.get()]);
+
+    if (activeCampaign) {
+        if (berlogaSnap.exists) {
+            campaignParticipant = true;
+            return berlogaSnap.data().nickname || name;
+        }
+        if (globalSnap.exists) {
+            campaignParticipant = false;
+            if (type === 'reg') {
+                alert('Этот username уже зарегистрирован в основной игре. Для акции BERLOGA нужен новый username.');
+                const conflict = new Error('berloga_main_conflict');
+                conflict.code = 'berloga/main-user';
+                throw conflict;
+            }
+            return globalSnap.data().nickname || name;
+        }
+        try {
+            await ensurePlayerProfile(name, uid);
+        } catch (profileErr) {
+            const denied = profileErr && (profileErr.code === 'permission-denied' || String(profileErr.message || '').includes('permission'));
+            alert(denied
+                ? 'Не удалось создать профиль акции BERLOGA. Попробуйте позже или напишите организатору.'
+                : ('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети')));
+            throw profileErr;
+        }
+        campaignParticipant = true;
+        return name;
+    }
+
+    if (globalSnap.exists) {
+        campaignParticipant = true;
+        return globalSnap.data().nickname || name;
+    }
+    if (berlogaSnap.exists) {
+        campaignParticipant = false;
+        return berlogaSnap.data().nickname || name;
+    }
+    try {
+        await ensurePlayerProfile(name, uid);
+    } catch (profileErr) {
+        alert('Не удалось сохранить профиль: ' + (profileErr.message || 'ошибка сети'));
+        throw profileErr;
+    }
+    campaignParticipant = true;
+    return name;
+}
+
+function authFailureMessage(type, code) {
+    if (code === 'auth/weak-password') {
+        return 'Пароль должен быть не короче 6 символов.';
+    }
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        if (activeCampaign && type === 'login') {
+            return 'Аккаунт не найден или неверный пароль.\n\nДля участия в акции BERLOGA нажмите «РЕГИСТРАЦИЯ», придумайте пароль (от 6 символов) и новый username, если вы уже играли в основную версию.';
+        }
+        if (activeCampaign && type === 'reg') {
+            return 'Этот username уже занят или неверный пароль.\n\nЕсли вы уже регистрировались в акции — нажмите «ВХОД». Если играли в основную версию — выберите другой username.';
+        }
+        return 'Неверный пароль или Telegram username.';
+    }
+    return null;
+}
+
 async function performAuth(type, name, pass) {
     name = normalizeTelegramUsername(name);
     if (!name || !pass) return false;
@@ -2432,57 +2511,48 @@ async function performAuth(type, name, pass) {
     try {
         let cred;
         if (type === 'reg') {
-            cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-            await ensurePlayerProfile(name, cred.user.uid);
-            campaignParticipant = true;
-            applyAuthState(name, cred.user.uid);
-        } else {
-            let lastErr = null;
-            for (const candidate of emails) {
-                try {
-                    cred = await fbAuth.signInWithEmailAndPassword(candidate, pass);
-                    break;
-                } catch (signInErr) {
-                    lastErr = signInErr;
-                }
+            if (pass.length < 6) {
+                alert('Пароль должен быть не короче 6 символов.');
+                return false;
             }
-            if (!cred) throw lastErr;
-            const snap = await getPlayersCollection().doc(cred.user.uid).get();
-            const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
-            campaignParticipant = snap.exists;
-            if (!snap.exists && (type === 'reg' || !activeCampaign)) await ensurePlayerProfile(name, cred.user.uid);
-            if (type === 'reg' && activeCampaign) campaignParticipant = true;
+            cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
+            const profileName = await finalizeAuthProfile(name, cred.user.uid, 'reg');
+            applyAuthState(profileName, cred.user.uid);
+        } else {
+            cred = await signInWithNicknameEmails(emails, pass);
+            const profileName = await finalizeAuthProfile(name, cred.user.uid, 'login');
             applyAuthState(profileName, cred.user.uid);
         }
         persistCurrentUser();
         return true;
     } catch (err) {
         const code = err && err.code ? err.code : '';
+        if (code === 'berloga/main-user') return false;
 
         if (type === 'reg' && code === 'auth/email-already-in-use') {
             try {
-                // Если ник уже существует, пытаемся войти с указанным паролем.
-                const cred = await fbAuth.signInWithEmailAndPassword(email, pass);
-                const snap = await getPlayersCollection().doc(cred.user.uid).get();
-                const profileName = snap.exists && snap.data().nickname ? snap.data().nickname : name;
-                campaignParticipant = snap.exists;
-                if (!snap.exists && !activeCampaign) await ensurePlayerProfile(name, cred.user.uid);
-                if (!snap.exists && activeCampaign) {
-                    alert('Этот username уже зарегистрирован в основной игре. Для акции BERLOGA нужен новый username.');
-                    return false;
-                }
+                cred = await signInWithNicknameEmails(emails, pass);
+                const profileName = await finalizeAuthProfile(name, cred.user.uid, 'reg');
                 applyAuthState(profileName, cred.user.uid);
                 persistCurrentUser();
-                alert('Этот username уже зарегистрирован. Выполнен вход.');
+                if (activeCampaign && campaignParticipant) {
+                    alert('Вы уже участвовали в акции BERLOGA. Выполнен вход.');
+                } else {
+                    alert('Этот username уже зарегистрирован. Выполнен вход.');
+                }
                 return true;
             } catch (loginErr) {
-                alert('Этот username уже зарегистрирован. Нажмите "ВХОД" и введите верный пароль.');
+                const loginCode = loginErr && loginErr.code ? loginErr.code : '';
+                if (loginCode === 'berloga/main-user') return false;
+                const msg = authFailureMessage('reg', loginCode);
+                alert(msg || 'Этот username уже зарегистрирован. Нажмите «ВХОД» и введите верный пароль, либо выберите другой username для акции BERLOGA.');
                 return false;
             }
         }
 
-        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
-            alert('Неверный пароль или Telegram username.');
+        const knownMsg = authFailureMessage(type, code);
+        if (knownMsg) {
+            alert(knownMsg);
             return false;
         }
 
@@ -2793,8 +2863,18 @@ function openMobileAuth(mode) {
     const nameInput = document.getElementById('mobile-auth-name');
     const passInput = document.getElementById('mobile-auth-pass');
     title.innerText = mode === 'reg' ? 'РЕГИСТРАЦИЯ' : 'ВХОД';
-    nameInput.placeholder = 'ЮЗЕРНЕЙМ В TELEGRAM';
-    passInput.placeholder = mode === 'reg' ? 'ПРИДУМАЙТЕ ПАРОЛЬ В ИГРЕ' : 'ВАШ ПАРОЛЬ В ИГРЕ';
+    nameInput.placeholder = activeCampaign
+        ? 'USERNAME TELEGRAM (5–32 символа)'
+        : 'ЮЗЕРНЕЙМ В TELEGRAM';
+    if (mode === 'reg') {
+        passInput.placeholder = activeCampaign
+            ? 'ПРИДУМАЙТЕ ПАРОЛЬ (ОТ 6 СИМВОЛОВ)'
+            : 'ПРИДУМАЙТЕ ПАРОЛЬ В ИГРЕ';
+    } else {
+        passInput.placeholder = activeCampaign
+            ? 'ПАРОЛЬ, КОТОРЫЙ ЗАДАВАЛИ ПРИ РЕГИСТРАЦИИ'
+            : 'ВАШ ПАРОЛЬ В ИГРЕ';
+    }
     nameInput.value = '';
     passInput.value = '';
     screen.style.display = 'flex';
@@ -2906,13 +2986,18 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             currentUserUid = user.uid;
             try {
-                const snap = await getPlayersCollection().doc(user.uid).get();
-                let profileName = snap.exists && snap.data().nickname ? snap.data().nickname : (currentUser || 'ГОСТЬ');
-                campaignParticipant = snap.exists;
-                if (!snap.exists && currentUser && !activeCampaign && !(await isBerlogaExclusiveUser(user.uid))) {
-                    await ensurePlayerProfile(currentUser, user.uid);
-                    campaignParticipant = true;
-                    profileName = currentUser;
+                const savedNick = normalizeTelegramUsername(currentUser || localStorage.getItem('dogma_current_user') || '');
+                let profileName = savedNick || 'ГОСТЬ';
+                if (savedNick) {
+                    profileName = await finalizeAuthProfile(savedNick, user.uid, 'login');
+                } else {
+                    const snap = await getPlayersCollection().doc(user.uid).get();
+                    if (snap.exists) {
+                        profileName = snap.data().nickname || profileName;
+                        campaignParticipant = true;
+                    } else {
+                        campaignParticipant = false;
+                    }
                 }
                 applyAuthState(profileName, user.uid);
                 persistCurrentUser();
