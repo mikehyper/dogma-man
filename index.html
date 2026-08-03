@@ -2017,37 +2017,7 @@ function applyCampaignUI() {
 
 initCampaignContext();
 
-/* Лимиты забега — дублируют firestore.rules; разнесены, чтобы не искать одним grep по репо. */
-const _RG = {
-    k: 3000, s: 20000, d: 500, c: 5000, i: 200,
-    r: 2.5, km: 15, kl: 120
-};
 const _SG = String.fromCharCode(68, 111, 103, 109, 97, 77, 97, 110, 52, 50);
-
-function _foldRun(run) {
-    const kills = run.kills | 0;
-    const shots = run.shots | 0;
-    const distKm = Number(run.distKm) || 0;
-    const coins = run.coins | 0;
-    const ice = run.icePickups | 0;
-    const dur = Math.max(0, run.durationMs | 0);
-    return { kills, shots, distKm, coins, ice, dur };
-}
-
-function auditRunPayload(run) {
-    const r = _foldRun(run);
-    if (r.kills < 0 || r.kills > _RG.k) return { ok: false, code: 'kills' };
-    if (r.shots < 0 || r.shots > _RG.s) return { ok: false, code: 'shots' };
-    if (r.kills > 0 && r.shots < 1) return { ok: false, code: 'ratio' };
-    if (r.shots > 0 && r.kills / r.shots > _RG.r) return { ok: false, code: 'ratio' };
-    if (r.distKm < 0 || r.distKm > _RG.d) return { ok: false, code: 'dist' };
-    if (r.coins < 0 || r.coins > _RG.c) return { ok: false, code: 'coins' };
-    if (r.ice < 0 || r.ice > _RG.i) return { ok: false, code: 'ice' };
-    const mins = Math.max(r.dur / 60000, 1 / 60);
-    if (r.kills / mins > _RG.kl) return { ok: false, code: 'kpm' };
-    if (r.distKm / mins > _RG.km) return { ok: false, code: 'dpm' };
-    return { ok: true, folded: r };
-}
 
 function sealPlayerStats(uid, data) {
     const g = (k) => Math.max(0, Number(data[k]) || 0);
@@ -2679,25 +2649,12 @@ async function saveCurrentUserStats() {
     const runCoins = coinsCollected | 0;
     const runShots = shotsThisRun | 0;
     const runIce = icePickupsThisRun | 0;
-    const durationMs = runStartedAtMs > 0
-        ? Math.max(0, Math.round(performance.now() - runStartedAtMs))
-        : 0;
 
     mergeLocalLifetimeAfterGameOver({ kills: runKills, km: runKm, coins: runCoins, shots: runShots, ice: runIce });
 
     if (!firebaseEnabled || !currentUserUid || !fbDb) return;
     if (activeCampaign && !campaignParticipant) return;
     if (await isBerlogaExclusiveUser(currentUserUid)) return;
-
-    const audit = auditRunPayload({
-        kills: runKills,
-        shots: runShots,
-        distKm: runKm,
-        coins: runCoins,
-        icePickups: runIce,
-        durationMs
-    });
-    if (!audit.ok) return;
 
     try {
         await ensurePlayerProfile(currentUser, currentUserUid);
@@ -2710,7 +2667,6 @@ async function saveCurrentUserStats() {
             const nextDist = Math.max(Number(prev.distKm) || 0, runKm);
             const newTotalKills = (Number(prev.totalKills) || 0) + runKills;
             const newTotalShots = (Number(prev.totalShots) || 0) + runShots;
-            if (newTotalShots > 0 && newTotalKills / newTotalShots > _RG.r) return;
 
             const patch = {
                 nickname: currentUser,
@@ -2734,7 +2690,7 @@ async function saveCurrentUserStats() {
 
 async function creditBankCoinsToCloud(delta) {
     const n = delta | 0;
-    if (!firebaseEnabled || !currentUserUid || !fbDb || n <= 0 || n > _RG.c) return;
+    if (!firebaseEnabled || !currentUserUid || !fbDb || n <= 0) return;
     if (activeCampaign && !campaignParticipant) return;
     if (await isBerlogaExclusiveUser(currentUserUid)) return;
     try {
@@ -2744,7 +2700,6 @@ async function creditBankCoinsToCloud(delta) {
             if (!snap.exists) return;
             const prev = snap.data();
             const nextBank = (Number(prev.bankCoins) || 0) + n;
-            if (nextBank > 10000000) throw new Error('cap');
             const patch = {
                 bankCoins: nextBank,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
